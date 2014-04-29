@@ -1,1 +1,10 @@
 convert test3.png -negate -threshold 60% -edge 5 -morphology EdgeOut Disk -fill white -floodfill +200+200 black edgetest.png
+convert edgetest.png -format %c histogram:info:- > edgetest.txt
+
+convert test3.png -negate -threshold 60% -edge 5 -morphology EdgeOut Disk -fill white -floodfill +200+200 black -format %c histogram:info:- > edgetest.txt
+
+convert test3.png -negate 1.png
+convert 1.png -threshold 60% 2.png
+convert 2.png -morphology EdgeOut Disk 3.png
+convert 3.png -fill white -floodfill +200+200 black 4.png
+convert 4.png -format %c histogram:info:- > edgetest.txt
