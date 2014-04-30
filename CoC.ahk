@@ -1,5 +1,6 @@
 #SingleInstance force
 #Include OCR.ahk
+#Include GDIp.ahk
 idleOption := 0
 donate := 0
 errorCheck := 0
@@ -23,6 +24,7 @@ Menu, MyMenu, Add, Train Goblins, TrainGoblins
 Menu, MyMenu, Add, Collect Resources, CollectResources
 Menu, MyMenu, Add, Drop Trophies, DropTrophiesHandler
 Menu, MyMenu, Add, Test Colors, TestColors
+Menu, MyMenu, Add, Take Base Picture, GetEnemyBaseJpeg
 Menu, MyMenu, Add  ; Add a separator line.
 
 ; Create another menu destined to become a submenu of the above menu.
@@ -37,7 +39,6 @@ Menu, MyMenu, Add, Item3, MenuHandler  ; Add another menu item beneath the subme
 
 
 Gosub, IdleHandler
-Gosub, DonateHandler
 Gosub, ErrorHandler
 
 return  ; End of script's auto-execute section.
@@ -424,4 +425,40 @@ break
 }
 Click %tempX%, %tempY%
 }
+return
+
+MatchmakingZoom:
+GoSub, ZoomOut
+MouseMove, 800, 440
+Click down
+MouseMove, 800, 587
+Click up
+return
+
+GetEnemyBaseJpeg:
+GoSub, GetWindow
+GoSub, ZoomOut
+WinGetPos, xOffset, yOffset
+fileJpg := "base.jpg"
+fileTxt := "base.txt"
+jpegQual := 100
+convertPath=convert.exe
+
+;take a screenshot of the specified area
+pToken:=Gdip_Startup()
+TopLeftX:=211 + xOffset
+TopLeftY:=38 + yOffset
+Width:=1122
+Height:=655
+pBitmap:=Gdip_BitmapFromScreen(TopLeftX "|" TopLeftY "|" Width "|" Height)
+Gdip_SaveBitmapToFile(pBitmap, fileJpg, jpegQual)
+Gdip_Shutdown(pToken)
+
+; Wait for jpg file to exist
+while NOT FileExist(fileJpg)
+  Sleep, 10
+
+;ensure the exes are there
+if NOT FileExist(convertPath)
+  MsgBox, No convert.exe found
 return
