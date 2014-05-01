@@ -10,6 +10,8 @@ myDarkElixir := -1
 myTrophies := -1
 myGems := -1
 myBuilders := -1
+enemyGold := -1
+enemyElixir := -1
 CoordMode, Pixel, Relative
 CoordMode, Mouse, Relative
 SetTitleMatchMode, RegEx
@@ -24,7 +26,6 @@ Menu, MyMenu, Add, Train Goblins, TrainGoblins
 Menu, MyMenu, Add, Collect Resources, CollectResources
 Menu, MyMenu, Add, Drop Trophies, DropTrophiesHandler
 Menu, MyMenu, Add, Test Colors, TestColors
-Menu, MyMenu, Add, Take Base Picture, GetEnemyBaseJpeg
 Menu, MyMenu, Add  ; Add a separator line.
 
 ; Create another menu destined to become a submenu of the above menu.
@@ -110,16 +111,28 @@ return
 
 GoblinHandler:
 Loop {
-Gosub, TrainGoblins
-Gosub, CollectResources
-Gosub, DonateGoblins
+Gosub, GetWindow
 Gosub, AttackButton
 Gosub, FindMatchButton
 Gosub, WaitForLoading
-Gosub, ZoomOut
-Gosub, ScrollUp
-Gosub, DropTroops
+Gosub, EnemyGold
+Gosub, EnemyElixir
+pix:=GetFlowPixels()
+if((pix < 135000) and ((enemyGold + enemyElixir)>2000)) {
+useGoblins:= Ceil((enemyGold + enemyElixir) / 250) 
+if (useGoblins > 100) {
+	useGoblins := 100
+}
+DropGobs(useGoblins)
 Gosub, ExitBattleIfDone
+} else {
+Gosub, ScrollUp
+Gosub, DropTroop
+Gosub, Surrender
+}
+Gosub, WaitForLoading
+Gosub, TrainGoblins
+Gosub, CollectResources
 }
 return
 
@@ -132,6 +145,7 @@ Gosub, ZoomOut
 Gosub, ScrollUp
 Gosub, DropTroop
 Gosub, Surrender
+Gosub, WaitForLoading
 }
 return
 
@@ -228,21 +242,17 @@ return
 ExitBattleIfDone:
 Loop {
 	Sleep 500
-	GoSub, EndMatchButton
-	Sleep 500
-	PixelGetColor, color, 795, 448
-	if (color = 0xE0E8E8) {
-		Click 692, 530
-		Sleep 5000
-		continue
-	}
 	PixelGetColor, color, 802, 702
 	if (color = 0x7CECD4) {
 		Click 802, 702
-		Gosub, WaitForLoading
 		return
 	}
-	return
+	GoSub, EnemyGold
+	GoSub, EnemyElixir
+	if ((enemyGold + enemyElixir) < 2000) {
+		GoSub, Surrender
+		return
+	}
 }
 return
 
@@ -251,8 +261,6 @@ Sleep 500
 GoSub, EndMatchButton
 GoSub, SurrenderOkayButton
 GoSub, ReturnFromBattleButton
-Sleep 500
-GoSub, WaitForLoading
 return
 
 TrainGoblins:
@@ -412,6 +420,20 @@ StringReplace, myBuilders, myBuilders, `n, , All
 myBuilders := SubStr(myBuilders,1,1)
 return
 
+EnemyGold:
+GoSub, GetWindow
+enemyGold := GetOCR(68, 110, 162, 38, "activeWindow")
+StringReplace, enemyGold, enemyGold, %A_SPACE%, , All
+StringReplace, enemyGold, enemyGold, `n, , All
+return
+
+EnemyElixir:
+GoSub, GetWindow
+enemyElixir := GetOCR(64, 144, 162, 38, "activeWindow")
+StringReplace, enemyElixir, enemyElixir, %A_SPACE%, , All
+StringReplace, enemyElixir, enemyElixir, `n, , All
+return
+
 TestColors:
 SetDefaultMouseSpeed, 0
 WinActivate, test.png
@@ -435,7 +457,7 @@ MouseMove, 800, 587
 Click up
 return
 
-GetEnemyBaseJpeg:
+GetFlowPixels() {
 GoSub, GetWindow
 GoSub, ZoomOut
 WinGetPos, xOffset, yOffset
@@ -476,7 +498,41 @@ Runwait, %comspec% /c %convertCmd%,, Hide
 ; Wait for txt file to exist
 while NOT FileExist(fileTxt)
 	Sleep, 10
-return
 
+FileRead, result, %fileTxt%
+
+result:=SubStr(result,1,10)
+result:=RegExReplace(result," ")
+
+return result
+}
+
+DropGobs(gobs) {
+	GoSub, GetWindow
+	WinGetPos,,,winWidth,winHeight
+	midX:=winWidth/2
+	midY:=(winHeight-50)/2
+	bbkDropped:=false
+	Loop, 8 {
+		topLeftX := Floor(midX-(A_Index*25))
+		topLeftY := Floor(midY-(A_Index*25))
+		bottomRightX := Floor(midX+(A_Index*25))
+		bottomRightY := Floor(midY+(A_Index*25))
+		Loop,10 {
+			PixelSearch, dropPointX, dropPointY, topLeftX, topLeftY, bottomRightX, bottomRightY, 0x2E7CCE, 1, Fast
+			if (ErrorLevel == 0) {
+				Loop %gobs% {
+					Click %dropPointX% %dropPointY%
+				}
+				Click 419, 787
+				Click %dropPointX% %dropPointY%
+				return
+			} else if (ErrorLevel == 2) {
+				return
+			}
+		}
+	}
+	return
+}
 
 

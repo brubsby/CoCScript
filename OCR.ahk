@@ -114,7 +114,7 @@ GetOCR(topLeftX="", topLeftY="", widthToScan="", heightToScan="", options="")
    ;convert the jpg file to tiff
    ;NOTE maybe converting to greyscale isn't the best idea
    ;  ... does it increase reliability or speed?
-   convertCmd=convert.exe %filenameJpg% -colorspace gray  +dither  -threshold 85`%  -normalize -negate -resize 200`% %filenameTif%
+   convertCmd=convert.exe %filenameJpg% -colorspace gray  +dither  -threshold 85`%  -normalize -negate -bordercolor white -border 20x20 -resize 200`% %filenameTif%
    Runwait, %comspec% /c %convertCmd%,, Hide
 
    ; Wait for tif file to exist
