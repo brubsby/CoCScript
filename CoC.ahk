@@ -440,6 +440,7 @@ GoSub, GetWindow
 GoSub, ZoomOut
 WinGetPos, xOffset, yOffset
 fileJpg := "base.jpg"
+filePng := "filter.png"
 fileTxt := "base.txt"
 jpegQual := 100
 convertPath=convert.exe
@@ -461,4 +462,21 @@ while NOT FileExist(fileJpg)
 ;ensure the exes are there
 if NOT FileExist(convertPath)
   MsgBox, No convert.exe found
+  
+convertCmd=convert.exe %fileJpg% -negate -threshold 60`% -edge 5 -morphology EdgeOut Disk -fill white -floodfill +20+425 black -floodfill +20+375 black -floodfill +20+325 black -floodfill +20+275 black -floodfill +20+225 black -floodfill +1100+425 black -floodfill +1100+375 black -floodfill +1100+325 black -floodfill +1100+275 black -floodfill +1100+225 black %filePng%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+; Wait for png file to exist
+while NOT FileExist(filePng)
+	Sleep, 10
+
+convertCmd=convert.exe %filePng% -format `%c histogram:info:- > %fileTxt%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+; Wait for txt file to exist
+while NOT FileExist(fileTxt)
+	Sleep, 10
 return
+
+
+
