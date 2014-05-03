@@ -124,7 +124,7 @@ GetOCR(topLeftX="", topLeftY="", widthToScan="", heightToScan="", options="")
    ;run the OCR command using my mixed cmdret hack
    if isNumericMode
       additionalParams .= "-C 0-9 "
-   runCmd=%tesseractPath% %filenameTif% in nobatch digits
+   runCmd=%tesseractPath% %filenameTif% in digits
    Runwait, %comspec% /c %runCmd% ,, Hide
    while NOT FileExist(filenameTxt)
       Sleep, 10
