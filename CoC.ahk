@@ -19,25 +19,20 @@ SetTitleMatchMode, RegEx
 SetDefaultMouseSpeed, 10
 
 ; Create the popup menu by adding some items to it. 
-Menu, MyMenu, Add, Keep from idling, IdleHandler
-Menu, MyMenu, Add, Donate Goblins, DonateHandler
-Menu, MyMenu, Add, Check for Errors, ErrorHandler
-Menu, MyMenu, Add, Gobblegobble, GoblinHandler
-Menu, MyMenu, Add, Train Goblins, TrainGoblins 
-Menu, MyMenu, Add, Collect Resources, CollectResources
-Menu, MyMenu, Add, Drop Trophies, DropTrophiesHandler
-Menu, MyMenu, Add, Test Colors, TestColors
+Menu, Toggles, Add, Keep from idling, IdleHandler
+Menu, Toggles, Add, Donate Goblins, DonateHandler
+Menu, Toggles, Add, Check for Errors, ErrorHandler
+Menu, MyMenu, Add, Toggle Options, :Toggles
+Menu, Automations, Add, Gobblegobble, GoblinHandler
+Menu, Automations, Add, Drop Trophies, DropTrophiesHandler
+Menu, MyMenu, Add, Full Automation, :Automations
+Menu, SmallAutomations, Add, Train Goblins, TrainGoblins 
+Menu, SmallAutomations, Add, Collect Resources, CollectResources
+Menu, SmallAutomations, Add, Test Colors, TestColors
+Menu, MyMenu, Add, Small Routines, :SmallAutomations
+Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath the submenu.
 Menu, MyMenu, Add  ; Add a separator line.
-
-; Create another menu destined to become a submenu of the above menu.
-Menu, Submenu1, Add, Item1, MenuHandler
-Menu, Submenu1, Add, Item2, MenuHandler
-
-; Create a submenu in the first menu (a right-arrow indicator). When the user selects it, the second menu is displayed.
-Menu, MyMenu, Add, My Submenu, :Submenu1
-
-Menu, MyMenu, Add  ; Add a separator line below the submenu.
-Menu, MyMenu, Add, Item3, MenuHandler  ; Add another menu item beneath the submenu.
+Menu, MyMenu, Add, Close Script, Exit  ; Add another menu item beneath the submenu.
 
 
 Gosub, IdleHandler
@@ -45,7 +40,9 @@ Gosub, ErrorHandler
 
 return  ; End of script's auto-execute section.
 
-
+Exit:
+ExitApp
+return
 
 
 MenuHandler:
@@ -65,7 +62,7 @@ Esc::Reload
 #z::Menu, MyMenu, Show  ; i.e. press the Win-Z hotkey to show the menu.
 
 IdleHandler:
-menu, MyMenu, ToggleCheck, Keep from idling
+menu, Toggles, ToggleCheck, Keep from idling
 idleOption := !idleOption
 if (idleOption) {
 	SetTimer, CheckInactive, 270000
@@ -75,7 +72,7 @@ if (idleOption) {
 return
 
 ErrorHandler:
-menu, MyMenu, ToggleCheck, Check for Errors
+menu, Toggles, ToggleCheck, Check for Errors
 errorCheck := !errorCheck
 if (errorCheck) {
 	SetTimer, CheckError, 60000
@@ -85,7 +82,7 @@ if (errorCheck) {
 return
 
 DonateHandler:
-menu, MyMenu, ToggleCheck, Donate Goblins
+menu, Toggles, ToggleCheck, Donate Goblins
 donate := !donate
 return
 
@@ -230,7 +227,10 @@ return
 
 ScrollUp:
 Gosub, GetWindow
-MouseMove, 803, 505, 0
+MouseMove, 803, 305
+Click down
+MouseMove, 803, 705
+Click up
 Click WheelUp
 return
 
