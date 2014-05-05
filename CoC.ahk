@@ -36,7 +36,6 @@ Menu, MyMenu, Add, Close Script, Exit  ; Add another menu item beneath the subme
 
 
 Gosub, IdleHandler
-Gosub, ErrorHandler
 
 return  ; End of script's auto-execute section.
 
@@ -90,11 +89,17 @@ CheckError:
 Gosub, GetWindow
 PixelGetColor color, 803, 488
 if (color =  0x282828) {
+Click 803, 488
+Error := 1
+return
+}
+PixelGetColor color, 803, 499
+if (color =  0x282828) {
 Click 803, 499
 Error := 1
-} else {
-Error := 0
+return
 }
+Error := 0
 return
 
 CheckInactive:
