@@ -4,6 +4,7 @@
 idleOption := 0
 donate := 0
 errorCheck := 0
+error := 1
 myGold := -1
 myElixir := -1
 myDarkElixir := -1
@@ -93,6 +94,9 @@ Gosub, GetWindow
 PixelGetColor color, 803, 499
 if (color =  0x282828) {
 Click 803, 499
+Error := 1
+} else {
+Error := 0
 }
 return
 
@@ -110,6 +114,12 @@ if (color = 0xFFFFFF) {
 return
 
 GoblinHandler:
+if(idleOption = 1) {
+	Gosub, IdleHandler
+}
+if(errorCheck = 0) {
+	Gosub, ErrorHandler
+}
 Loop {
 Gosub, GetWindow
 Gosub, AttackButton
@@ -436,10 +446,11 @@ return
 
 TestColors:
 SetDefaultMouseSpeed, 0
-WinActivate, test.png
+WinActivate, Paint
 Loop {
-WinActivate, test.png
-PixelSearch tempX, tempY, 15, 155, 1600, 1045, 0xC1CCD9, 1, Fast
+WinActivate, Paint
+PixelSearch tempX, tempY, 15, 155, 1135, 809, 0x09B7E6, 10, Fast
+; 0xE058D5
 if ErrorLevel {
 MsgBox, Done
 SetDefaultMouseSpeed, 10
