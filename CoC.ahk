@@ -4,7 +4,7 @@
 idleOption := 0
 donate := 0
 errorCheck := 0
-error := 1
+error := 0
 myGold := -1
 myElixir := -1
 myDarkElixir := -1
@@ -91,7 +91,7 @@ return
 
 CheckError:
 Gosub, GetWindow
-PixelGetColor color, 803, 499
+PixelGetColor color, 803, 488
 if (color =  0x282828) {
 Click 803, 499
 Error := 1
@@ -124,7 +124,7 @@ Loop {
 Gosub, GetWindow
 Gosub, AttackButton
 Gosub, FindMatchButton
-Gosub, WaitForLoading
+Gosub, WaitForMatch
 Gosub, EnemyGold
 Gosub, EnemyElixir
 pix:=GetFlowPixels()
@@ -140,7 +140,7 @@ Gosub, ScrollUp
 Gosub, DropTroop
 Gosub, Surrender
 }
-Gosub, WaitForLoading
+Gosub, WaitForHome
 Gosub, TrainGoblins
 Gosub, CollectResources
 }
@@ -234,6 +234,7 @@ MouseMove, 803, 505, 0
 Click WheelUp
 return
 
+;wait for either base loading or match loading, deprecated
 WaitForLoading:
 Sleep 1000
 Loop {
@@ -244,6 +245,40 @@ Loop {
 	}
 	PixelGetColor, color, 141, 660
 	if (color = 0x5450EF) {
+		break
+	}
+}
+return
+
+WaitForMatch:
+Sleep 1000
+Loop {
+	Sleep 1000
+	PixelGetColor, color, 914, 511
+	if (color = 0x75EAD0) {
+		Click 914, 511
+	}
+	PixelGetColor, color, 141, 660
+	if (color = 0x5450EF) {
+		break
+	}
+	if (error = 1) {
+		Loop {
+			if (error = 0) {
+				Sleep 10000
+				Gosub, GoblinHandler
+			}
+		}
+	}
+}
+return
+
+WaitForHome:
+Sleep 1000
+Loop {
+	Sleep 1000
+	PixelGetColor, color, 831, 63
+	if (color = 0xF4F4EC) {
 		break
 	}
 }
