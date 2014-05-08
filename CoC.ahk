@@ -1,6 +1,7 @@
 #SingleInstance force
 #Include OCR.ahk
 #Include GDIp.ahk
+#Include GDIpHelper.ahk
 idleOption := 0
 donate := 0
 errorCheck := 0
@@ -32,17 +33,89 @@ Menu, SmallAutomations, Add, Test Colors, TestColors
 Menu, MyMenu, Add, Small Routines, :SmallAutomations
 Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath the submenu.
 Menu, MyMenu, Add  ; Add a separator line.
-Menu, MyMenu, Add, Close Script, Exit  ; Add another menu item beneath the submenu.
+Menu, MyMenu, Add, Close Script, CoCExit
+Menu, MyMenu, Add, Parse Resources, GetMyStats
+Menu, MyMenu, Add, Write Log, WriteLog
+Menu, MyMenu, Add, Copy Log, CopyLogToDropbox
 
 
+SetTimer, CopyLogToDropbox, 1800000
 Gosub, IdleHandler
+
+Gui, Add, Text,, Trophies:
+Gui, Add, Text,, Gems:
+Gui, Add, Text,, Builders:
+Gui, Add, Text,, Gold:
+Gui, Add, Text,, Elixir:
+Gui, Add, Text,, DarkElixir:
+Gui, Add, Text,w100 vTrophies ys, % myTrophies
+Gui, Add, Text,w100 vGems, % myGems
+Gui, Add, Text,w100 vBuilders, % myBuilders
+Gui, Add, Text,w100 vGold, % myGold
+Gui, Add, Text,w100 vElixir, % myElixir
+Gui, Add, Text,w100 vDarkElixir, % myDarkElixir
+Gui, Add, Text,ys, EnemyGold:
+Gui, Add, Text,, EnemyElixir:
+Gui, Add, Text,w100 vEnemyGold ys, % enemyGold
+Gui, Add, Text,w100 vEnemyElixir, % enemyElixir
+Gui, Show,,
 
 return  ; End of script's auto-execute section.
 
-Exit:
+WriteLog:
+IfNotExist, log.csv 
+{
+	FileAppend, time`,myGold`,myElixir`,myDarkElixir`,myTrophies`,myGems`,myBuilders`n, log.csv
+}
+FileAppend, %A_Now%`,%myGold%`,%myElixir%`,%myDarkElixir%`,%myTrophies%`,%myGems%`,%myBuilders%`n, log.csv
+return
+
+CopyLogToDropbox:
+if InStr(FileExist(HOMEDRIVE HOMEPATH "\Dropbox"), "D")
+	FileCopy, log.csv, %HOMEDRIVE%%HOMEPATH%\Dropbox\CoClog.csv , 1
+return
+	
+
+UpdateGui:
+GuiControl,, Trophies, %myTrophies%
+GuiControl,, Gems, %myGems%
+GuiControl,, Builders, %myBuilders%
+GuiControl,, Gold, %myGold%
+GuiControl,, Elixir, %myElixir%
+GuiControl,, DarkElixir, %myDarkElixir%
+GuiControl,, EnemyGold, %enemyGold%
+GuiControl,, EnemyElixir, %enemyElixir%
+return
+
+CheckIdle:
+while (A_TimeIdlePhysical < 30000) {
+Sleep 100
+}
+return
+
+DrawText(text,x,y,res,size) {
+StartDrawGDIP()
+ClearDrawGDIP()
+Gdip_SetSmoothingMode(G,4)
+Gdip_TextToGraphics(G,text, "x350 y200 cff000000 r4 s72")
+EndDrawGDIP()
+return
+}
+
+CoCExit:
 ExitApp
 return
 
+GetMyStats:
+GoSub, GetWindow
+GoSub, MyGold
+GoSub, MyElixir
+GoSub, MyDarkElixir
+GoSub, MyTrophies
+GoSub, MyGems
+GoSub, MyBuilders
+GoSub, UpdateGui
+return
 
 MenuHandler:
 GoSub, MyGold
@@ -122,6 +195,7 @@ if(idleOption = 1) {
 if(errorCheck = 0) {
 	Gosub, ErrorHandler
 }
+SetTimer, WriteLog, 600000
 Loop {
 Gosub, GetWindow
 Gosub, AttackButton
@@ -129,9 +203,10 @@ Gosub, FindMatchButton
 Gosub, WaitForMatch
 Gosub, EnemyGold
 Gosub, EnemyElixir
+Gosub, UpdateGui
 pix:=GetFlowPixels()
 if((pix < 135000) and ((enemyGold + enemyElixir)>2000)) {
-useGoblins:= Ceil((enemyGold + enemyElixir) / 250) 
+useGoblins:= Ceil((enemyGold + enemyElixir) / 300) 
 if (useGoblins > 100) {
 	useGoblins := 100
 }
@@ -143,6 +218,7 @@ Gosub, DropTroop
 Gosub, Surrender
 }
 Gosub, WaitForHome
+Gosub, GetMyStats
 Gosub, TrainGoblins
 Gosub, CollectResources
 }
@@ -299,6 +375,7 @@ Loop {
 	}
 	GoSub, EnemyGold
 	GoSub, EnemyElixir
+	GoSub, UpdateGui
 	if ((enemyGold + enemyElixir) < 2000) {
 		GoSub, Surrender
 		return
@@ -450,7 +527,7 @@ return
 
 MyTrophies:
 GoSub, GetWindow
-myTrophies := GetOCR(79, 119, 85, 25, "activeWindow")
+myTrophies := GetOCR(77, 119, 87, 27, "activeWindow")
 StringReplace, myTrophies, myTrophies, %A_SPACE%, , All
 StringReplace, myTrophies, myTrophies, `n, , All
 return

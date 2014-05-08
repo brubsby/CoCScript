@@ -51,6 +51,8 @@ GetOCR(topLeftX="", topLeftY="", widthToScan="", heightToScan="", options="")
          isNumericMode:=true
       if InStr(options, "numeric")
          isNumericMode:=true
+	  if InStr(options, "lighter")
+         isLighterMode:=true
       if InStr(options, "activeWindow")
          isActiveWindowMode:=true
       ;if InStr(options, "screenCoord")
@@ -114,7 +116,11 @@ GetOCR(topLeftX="", topLeftY="", widthToScan="", heightToScan="", options="")
    ;convert the jpg file to tiff
    ;NOTE maybe converting to greyscale isn't the best idea
    ;  ... does it increase reliability or speed?
+   if(isLighterMode = true) {
+   convertCmd=convert.exe %filenameJpg% -colorspace gray  +dither  -threshold 75`%  -normalize -negate -bordercolor white -border 20x20 -resize 200`% %filenameTif%
+   } else {
    convertCmd=convert.exe %filenameJpg% -colorspace gray  +dither  -threshold 85`%  -normalize -negate -bordercolor white -border 20x20 -resize 200`% %filenameTif%
+   }
    Runwait, %comspec% /c %convertCmd%,, Hide
 
    ; Wait for tif file to exist
