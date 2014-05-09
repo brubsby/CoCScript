@@ -34,9 +34,6 @@ Menu, MyMenu, Add, Small Routines, :SmallAutomations
 Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath the submenu.
 Menu, MyMenu, Add  ; Add a separator line.
 Menu, MyMenu, Add, Close Script, CoCExit
-Menu, MyMenu, Add, Parse Resources, GetMyStats
-Menu, MyMenu, Add, Write Log, WriteLog
-Menu, MyMenu, Add, Copy Log, CopyLogToDropbox
 
 
 SetTimer, CopyLogToDropbox, 1800000
@@ -210,7 +207,7 @@ useGoblins:= Ceil((enemyGold + enemyElixir) / 300)
 if (useGoblins > 100) {
 	useGoblins := 100
 }
-DropGobs(useGoblins)
+DropGobsGold(useGoblins)
 Gosub, ExitBattleIfDone
 } else {
 Gosub, ScrollUp
@@ -366,6 +363,8 @@ Loop {
 return
 
 ExitBattleIfDone:
+lastResources := enemyGold + enemyElixir
+i := 0
 Loop {
 	Sleep 500
 	PixelGetColor, color, 802, 702
@@ -375,6 +374,14 @@ Loop {
 	}
 	GoSub, EnemyGold
 	GoSub, EnemyElixir
+	if ((enemyGold + enemyElixir) = lastResources) {
+		i := i + 1
+		if (i > 30) {
+			GoSub, Surrender
+			return
+		}
+	}
+	lastResources := enemyGold + enemyElixir
 	GoSub, UpdateGui
 	if ((enemyGold + enemyElixir) < 2000) {
 		GoSub, Surrender
@@ -577,14 +584,6 @@ Click %tempX%, %tempY%
 }
 return
 
-MatchmakingZoom:
-GoSub, ZoomOut
-MouseMove, 800, 440
-Click down
-MouseMove, 800, 587
-Click up
-return
-
 GetFlowPixels() {
 GoSub, GetWindow
 GoSub, ZoomOut
@@ -663,4 +662,38 @@ DropGobs(gobs) {
 	return
 }
 
-
+DropGobsGold(gobs) {
+	GoSub, GetWindow
+	topLeftX:=211
+	topLeftY:=38
+	width:=1333
+	height:=693
+	WinGetPos,,,winWidth,winHeight
+	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x09B7E6, 10, Fast
+	Loop, 40 {
+		topLeftX := Floor(seedX-(A_Index*5))
+		if (topLeftX < 0)
+			topLeftX := 0
+		topLeftY := Floor(seedY-(A_Index*5))
+		if (topLeftY < 0)
+			topLeftY := 0
+		bottomRightX := Floor(seedX+(A_Index*5))
+		if (bottomRightX > winWidth) 
+			bottomRightX := winWidth
+		bottomRightY := Floor(seedY+(A_Index*5))
+		if (bottomRightY > winHeight) 
+			bottomRightY := winHeight
+		PixelSearch, dropPointX, dropPointY, topLeftX, topLeftY, bottomRightX, bottomRightY, 0x2E7CCE, 1, Fast
+		if (ErrorLevel == 0) {
+			Loop %gobs% {
+				Click %dropPointX% %dropPointY%
+			}
+			Click 419, 787
+			Click %dropPointX% %dropPointY%
+			return
+		} else if (ErrorLevel == 2) {
+			return
+		}
+	}
+	return
+}
