@@ -34,8 +34,8 @@ Menu, SmallAutomations, Add, Test Colors, TestColors
 Menu, MyMenu, Add, Small Routines, :SmallAutomations
 Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath the submenu.
 Menu, MyMenu, Add  ; Add a separator line.
+Menu, MyMenu, Add, Cum on step it up, Sanic
 Menu, MyMenu, Add, Close Script, CoCExit
-
 
 ;SetTimer, CopyLogToDropbox, 1800000
 Gosub, IdleHandler
@@ -59,6 +59,10 @@ Gui, Add, Text,w100 vEnemyElixir, % enemyElixir
 Gui, Show, minimize,
 
 return  ; End of script's auto-execute section.
+
+Sanic:
+SoundPlay, sanic.mp3
+return
 
 WriteLog:
 IfNotExist, log.csv 
@@ -206,8 +210,8 @@ Gosub, UpdateGui
 pix:=GetFlowPixels()
 if((pix < 135000) and ((enemyGold + enemyElixir)>2000)) {
 useGoblins:= Ceil((enemyGold + enemyElixir) / 300) 
-if (useGoblins > 100) {
-	useGoblins := 100
+if (useGoblins > 75) {
+	useGoblins := 75
 }
 DropGobsGold(useGoblins)
 Gosub, ExitBattleIfDone
@@ -412,7 +416,7 @@ Loop {
 	GoSub, EnemyElixir
 	if ((enemyGold + enemyElixir) = lastResources) {
 		i := i + 1
-		if (i > 30) {
+		if (i > 20) {
 			GoSub, Surrender
 			return
 		}
@@ -705,7 +709,7 @@ DropGobsGold(gobs) {
 	width:=1333
 	height:=693
 	WinGetPos,,,winWidth,winHeight
-	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x09B7E6, 8, Fast
+	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x09B7E6, 6, Fast
 	if (ErrorLevel = 1) {
 	seedX := winWidth/2
 	seedY := winHeight/2
