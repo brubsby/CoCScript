@@ -25,6 +25,7 @@ Menu, Toggles, Add, Donate Goblins, DonateHandler
 Menu, Toggles, Add, Check for Errors, ErrorHandler
 Menu, MyMenu, Add, Toggle Options, :Toggles
 Menu, Automations, Add, Gobblegobble, GoblinHandler
+Menu, Automations, Add, Gobblegobbledebug, GoblinHandlerDebug
 Menu, Automations, Add, Drop Trophies, DropTrophiesHandler
 Menu, MyMenu, Add, Full Automation, :Automations
 Menu, SmallAutomations, Add, Train Goblins, TrainGoblins 
@@ -36,7 +37,7 @@ Menu, MyMenu, Add  ; Add a separator line.
 Menu, MyMenu, Add, Close Script, CoCExit
 
 
-SetTimer, CopyLogToDropbox, 1800000
+;SetTimer, CopyLogToDropbox, 1800000
 Gosub, IdleHandler
 
 Gui, Add, Text,, Trophies:
@@ -55,7 +56,7 @@ Gui, Add, Text,ys, EnemyGold:
 Gui, Add, Text,, EnemyElixir:
 Gui, Add, Text,w100 vEnemyGold ys, % enemyGold
 Gui, Add, Text,w100 vEnemyElixir, % enemyElixir
-Gui, Show,,
+Gui, Show, minimize,
 
 return  ; End of script's auto-execute section.
 
@@ -64,7 +65,8 @@ IfNotExist, log.csv
 {
 	FileAppend, time`,myGold`,myElixir`,myDarkElixir`,myTrophies`,myGems`,myBuilders`n, log.csv
 }
-FileAppend, %A_Now%`,%myGold%`,%myElixir%`,%myDarkElixir%`,%myTrophies%`,%myGems%`,%myBuilders%`n, log.csv
+time := ((A_YDay*24)+A_Hour)*60+A_Min
+FileAppend, %time%`,%myGold%`,%myElixir%`,%myDarkElixir%`,%myTrophies%`,%myGems%`,%myBuilders%`n, log.csv
 return
 
 CopyLogToDropbox:
@@ -218,6 +220,40 @@ Gosub, WaitForHome
 Gosub, GetMyStats
 Gosub, TrainGoblins
 Gosub, CollectResources
+}
+return
+
+GoblinHandlerDebug:
+if(idleOption = 1) {
+	Gosub, IdleHandler
+}
+if(errorCheck = 0) {
+	Gosub, ErrorHandler
+}
+SetTimer, WriteLog, 600000
+Loop {
+Gosub, GetWindow
+Gosub, AttackButton
+Gosub, FindMatchButton
+Gosub, WaitForMatch
+Gosub, EnemyGold
+Gosub, EnemyElixir
+Gosub, UpdateGui
+pix:=GetFlowPixels()
+if((pix < 135000) and ((enemyGold + enemyElixir)>2000)) {
+useGoblins:= Ceil((enemyGold + enemyElixir) / 300) 
+if (useGoblins > 100) {
+	useGoblins := 100
+}
+DropGobsGold(useGoblins)
+Gosub, ExitBattleIfDone
+} else {
+Gosub, ScrollUp
+Gosub, DropTroop
+Gosub, Surrender
+}
+Gosub, WaitForHome
+Gosub, GetMyStats
 }
 return
 
@@ -669,7 +705,12 @@ DropGobsGold(gobs) {
 	width:=1333
 	height:=693
 	WinGetPos,,,winWidth,winHeight
-	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x09B7E6, 10, Fast
+	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x09B7E6, 8, Fast
+	if (ErrorLevel = 1) {
+	seedX := winWidth/2
+	seedY := winHeight/2
+	}
+	MouseMove seedX, seedY, 1
 	Loop, 40 {
 		topLeftX := Floor(seedX-(A_Index*5))
 		if (topLeftX < 0)
@@ -683,6 +724,10 @@ DropGobsGold(gobs) {
 		bottomRightY := Floor(seedY+(A_Index*5))
 		if (bottomRightY > winHeight) 
 			bottomRightY := winHeight
+		MouseMove topLeftX, topLeftY, 1
+		MouseMove bottomRightX, topLeftY, 1
+		MouseMove bottomRightX, bottomRightY, 1
+		MouseMove topLeftX, bottomRightY, 1
 		PixelSearch, dropPointX, dropPointY, topLeftX, topLeftY, bottomRightX, bottomRightY, 0x2E7CCE, 1, Fast
 		if (ErrorLevel == 0) {
 			Loop %gobs% {
