@@ -1,4 +1,5 @@
 #SingleInstance force
+#InstallMouseHook
 #Include OCR.ahk
 #Include GDIp.ahk
 #Include GDIpHelper.ahk
@@ -32,13 +33,20 @@ Menu, SmallAutomations, Add, Train Goblins, TrainGoblins
 Menu, SmallAutomations, Add, Collect Resources, CollectResources
 Menu, SmallAutomations, Add, Test Colors, TestColors
 Menu, MyMenu, Add, Small Routines, :SmallAutomations
+Menu, Configuration, Add, Set Collector Locations, ConfigResourceLocation
+Menu, Configuration, Add, Set Barracks Locations, ConfigBarracksLocation
+Menu, MyMenu, Add, Configuration, :Configuration
 Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath the submenu.
 Menu, MyMenu, Add  ; Add a separator line.
 Menu, MyMenu, Add, Cum on step it up, Sanic
+Menu, MyMenu, Add, Show Debug Window, ShowDebug
 Menu, MyMenu, Add, Close Script, CoCExit
+
+
 
 ;SetTimer, CopyLogToDropbox, 1800000
 Gosub, IdleHandler
+Gosub, ReadConfig
 
 Gui, Add, Text,, Trophies:
 Gui, Add, Text,, Gems:
@@ -56,9 +64,12 @@ Gui, Add, Text,ys, EnemyGold:
 Gui, Add, Text,, EnemyElixir:
 Gui, Add, Text,w100 vEnemyGold ys, % enemyGold
 Gui, Add, Text,w100 vEnemyElixir, % enemyElixir
-Gui, Show, minimize,
 
 return  ; End of script's auto-execute section.
+
+ShowDebug:
+Gui, Show, ,
+return
 
 Sanic:
 SoundPlay, sanic.mp3
@@ -216,14 +227,15 @@ if (useGoblins > 75) {
 DropGobsGold(useGoblins)
 Gosub, ExitBattleIfDone
 } else {
-Gosub, ScrollUp
-Gosub, DropTroop
+DropGobsGold(0)
 Gosub, Surrender
 }
 Gosub, WaitForHome
 Gosub, GetMyStats
-Gosub, TrainGoblins
-Gosub, CollectResources
+if(myTrophies < 200) {
+	Gosub, TrainGoblins
+	Gosub, CollectResources
+}
 }
 return
 
@@ -349,7 +361,7 @@ MouseMove, 803, 305
 Click down
 MouseMove, 803, 705
 Click up
-Click WheelUp
+;Click WheelUp
 return
 
 ;wait for either base loading or match loading, deprecated
@@ -372,15 +384,19 @@ WaitForMatch:
 Sleep 1000
 Loop {
 	Sleep 1000
+	;If there was a shield, hit okay and continue
 	PixelGetColor, color, 914, 511
 	if (color = 0x75EAD0) {
 		Click 914, 511
 	}
+	;look for the red end battle button, finish blocking if found
 	PixelGetColor, color, 141, 660
 	if (color = 0x5450EF) {
 		break
 	}
+	;if there was an error message the last time we are now back at the home screen but stuck
 	if (error = 1) {
+		;wait until we check for errors and there isn't one, sleep ten seconds, then restart the automation
 		Loop {
 			if (error = 0) {
 				Sleep 10000
@@ -395,6 +411,7 @@ WaitForHome:
 Sleep 1000
 Loop {
 	Sleep 1000
+	;Look for the shield icon on the home screen (opaque so it's easy to get)
 	PixelGetColor, color, 831, 63
 	if (color = 0xF4F4EC) {
 		break
@@ -439,53 +456,31 @@ return
 
 TrainGoblins:
 
-B1X := 400
-B1Y := 611
+;B1X := 400
+;B1Y := 611
 
-B2X := 735
-B2Y := 314
+;B2X := 735
+;B2Y := 314
 
-B3X := 869
-B3Y := 314
+;B3X := 869
+;B3Y := 314
 
-B4X := 1205
-B4Y := 719
+;B4X := 1205
+;B4Y := 719
 
+Gosub, GetWindow
 Gosub, ZoomOut
 Gosub, ScrollUp
 
-Click %B1X%, %B1Y%
+Loop %totalBarracks% {
+MouseClick,, BX%A_Index%, BY%A_Index%
 Gosub, TrainTroopsButton
 MouseMove 805, 438
 Click down
 Sleep 2000
 Click up
 Gosub, TroopTrainExitButton
-
-
-Click %B2X%, %B2Y%
-Gosub, TrainTroopsButton
-MouseMove 805, 438
-Click down
-Sleep 2000
-Click up
-Gosub, TroopTrainExitButton
-
-Click %B3X%, %B3Y%
-Gosub, TrainTroopsButton
-MouseMove 805, 438
-Click down
-Sleep 2000
-Click up
-Gosub, TroopTrainExitButton
-
-Click %B4X%, %B4Y%
-Gosub, TrainTroopsButton
-MouseMove 805, 438
-Click down
-Sleep 2000
-Click up
-Gosub, TroopTrainExitButton
+}
 return
 
 DropTroop:
@@ -503,23 +498,83 @@ Click 419, 787
 Click 799, 53
 return
 
+ConfigResourceLocation:
+Gosub, GetWindow
+Gosub, ZoomOut
+Gosub, ScrollUp
+Gosub, GetWindow
+WinGetPos,winX,winY,winWidth,winHeight
+InputBox, numCollectors, Number of Collectors, How many collectors do you have? (E`,G`, and DE) After inputting the amount`, click on each collector once and do not move the screen. It also works better if you select the bottom most collectors and work up ,,300,250,winX+winWidth/2-150,winY+winHeight/2-125,,,13
+if ErrorLevel
+	return
+if numCollectors is not integer 
+{
+	Msgbox, Not a valid number
+	return
+}
+IniDelete, config.ini, collectors
+IniWrite, %numCollectors%, config.ini, collectors, numCollectors
+Loop %numCollectors% {
+KeyWait, LButton, D
+KeyWait, LButton, U
+MouseGetPos, xPos, yPos
+IniWrite, %xPos%, config.ini, collectors, CX%A_Index%
+IniWrite, %yPos%, config.ini, collectors, CY%A_Index%
+}
+GoSub, ReadConfig
+return
+
+ConfigBarracksLocation:
+Gosub, GetWindow
+Gosub, ZoomOut
+Gosub, ScrollUp
+Gosub, GetWindow
+WinGetPos,winX,winY,winWidth,winHeight
+InputBox, numBarracks, Number of Barracks, How many normal barracks do you have? After inputting the amount`, click on each barracks once and do not move the screen.,,300,250,winX+winWidth/2-150,winY+winHeight/2-125,,,4
+if ErrorLevel
+	return
+if numBarracks is not integer 
+{
+	Msgbox, Not a valid number
+	return
+}
+IniDelete, config.ini, barracks
+IniWrite, %numBarracks%, config.ini, barracks, numBarracks
+Loop %numBarracks% {
+KeyWait, LButton, D
+KeyWait, LButton, U
+MouseGetPos, xPos, yPos
+IniWrite, %xPos%, config.ini, barracks, BX%A_Index%
+IniWrite, %yPos%, config.ini, barracks, BY%A_Index%
+}
+GoSub, ReadConfig
+return
+
+ReadConfig:
+IfNotExist, config.ini
+{
+	MsgBox, Please configure barracks and collector locations (which will be saved)
+	return
+}
+IniRead, totalBarracks, config.ini, barracks, numBarracks
+Loop %totalBarracks% {
+IniRead, BX%A_Index%, config.ini, barracks, BX%A_Index%
+IniRead, BY%A_Index%, config.ini, barracks, BY%A_Index%
+}
+IniRead, totalCollectors, config.ini, collectors, numCollectors
+Loop %totalCollectors% {
+IniRead, CX%A_Index%, config.ini, collectors, CX%A_Index%
+IniRead, CY%A_Index%, config.ini, collectors, CY%A_Index%
+}
+return
+
 CollectResources:
 Gosub, GetWindow
 Gosub, ZoomOut
 Gosub, ScrollUp
-Click 418, 559
-Click 452, 506
-Click 504, 467
-Click 573, 416
-Click 648, 358
-Click 960, 358
-Click 1028, 416
-Click 1098, 467
-Click 1135, 506
-Click 1240, 679
-Click 1206, 619
-Click 1185, 558
-Click 1048, 662
+Loop %totalCollectors% {
+MouseClick,, CX%A_Index%, CY%A_Index%
+}
 return
 
 DonateGoblins:
@@ -556,6 +611,8 @@ GoSub, GetWindow
 myGold := GetOCR(1344, 55, 180, 25, "activeWindow")
 StringReplace, myGold, myGold, %A_SPACE%, , All
 StringReplace, myGold, myGold, `n, , All
+if(myGold = "")
+myGold := 0
 return
 
 MyElixir:
@@ -563,6 +620,8 @@ GoSub, GetWindow
 myElixir := GetOCR(1344, 122, 185, 25, "activeWindow")
 StringReplace, myElixir, myElixir, %A_SPACE%, , All
 StringReplace, myElixir, myElixir, `n, , All
+if(myElixir = "")
+myElixir := 0
 return
 
 MyDarkElixir:
@@ -570,6 +629,8 @@ GoSub, GetWindow
 myDarkElixir := GetOCR(1409, 186, 122, 25, "activeWindow")
 StringReplace, myDarkElixir, myDarkElixir, %A_SPACE%, , All
 StringReplace, myDarkElixir, myDarkElixir, `n, , All
+if(myDarkElixir = "")
+myDarkElixir := 0
 return
 
 MyTrophies:
@@ -577,6 +638,8 @@ GoSub, GetWindow
 myTrophies := GetOCR(77, 119, 87, 27, "activeWindow")
 StringReplace, myTrophies, myTrophies, %A_SPACE%, , All
 StringReplace, myTrophies, myTrophies, `n, , All
+if(myTrophies = "")
+myTrophies := 0
 return
 
 MyGems:
@@ -584,6 +647,8 @@ GoSub, GetWindow
 myGems := GetOCR(1440, 251, 92, 23, "activeWindow")
 StringReplace, myGems, myGems, %A_SPACE%, , All
 StringReplace, myGems, myGems, `n, , All
+if(myGems = "")
+myGems := 0
 return
 
 MyBuilders:
@@ -592,6 +657,8 @@ myBuilders := GetOCR(654, 52, 68, 26, "activeWindow")
 StringReplace, myBuilders, myBuilders, %A_SPACE%, , All
 StringReplace, myBuilders, myBuilders, `n, , All
 myBuilders := SubStr(myBuilders,1,1)
+if(myBuilders = "")
+myBuilders := 0
 return
 
 EnemyGold:
@@ -599,6 +666,8 @@ GoSub, GetWindow
 enemyGold := GetOCR(68, 110, 162, 38, "activeWindow")
 StringReplace, enemyGold, enemyGold, %A_SPACE%, , All
 StringReplace, enemyGold, enemyGold, `n, , All
+if(enemyGold = "")
+enemyGold := 0
 return
 
 EnemyElixir:
@@ -606,6 +675,8 @@ GoSub, GetWindow
 enemyElixir := GetOCR(64, 144, 162, 38, "activeWindow")
 StringReplace, enemyElixir, enemyElixir, %A_SPACE%, , All
 StringReplace, enemyElixir, enemyElixir, `n, , All
+if(enemyElixir = "")
+enemyElixir := 0
 return
 
 TestColors:
@@ -613,7 +684,7 @@ SetDefaultMouseSpeed, 0
 WinActivate, Paint
 Loop {
 WinActivate, Paint
-PixelSearch tempX, tempY, 15, 155, 1135, 809, 0x09B7E6, 10, Fast
+PixelSearch tempX, tempY, 15, 155, 1135, 809, 0x00A4D8, 1, Fast
 ; 0xE058D5
 if ErrorLevel {
 MsgBox, Done
@@ -674,34 +745,6 @@ result:=RegExReplace(result," ")
 return result
 }
 
-DropGobs(gobs) {
-	GoSub, GetWindow
-	WinGetPos,,,winWidth,winHeight
-	midX:=winWidth/2
-	midY:=(winHeight-50)/2
-	bbkDropped:=false
-	Loop, 8 {
-		topLeftX := Floor(midX-(A_Index*25))
-		topLeftY := Floor(midY-(A_Index*25))
-		bottomRightX := Floor(midX+(A_Index*25))
-		bottomRightY := Floor(midY+(A_Index*25))
-		Loop,10 {
-			PixelSearch, dropPointX, dropPointY, topLeftX, topLeftY, bottomRightX, bottomRightY, 0x2E7CCE, 1, Fast
-			if (ErrorLevel == 0) {
-				Loop %gobs% {
-					Click %dropPointX% %dropPointY%
-				}
-				Click 419, 787
-				Click %dropPointX% %dropPointY%
-				return
-			} else if (ErrorLevel == 2) {
-				return
-			}
-		}
-	}
-	return
-}
-
 DropGobsGold(gobs) {
 	GoSub, GetWindow
 	topLeftX:=211
@@ -709,23 +752,23 @@ DropGobsGold(gobs) {
 	width:=1333
 	height:=693
 	WinGetPos,,,winWidth,winHeight
-	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x09B7E6, 6, Fast
+	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x00A4D8, 1, Fast
 	if (ErrorLevel = 1) {
 	seedX := winWidth/2
 	seedY := winHeight/2
 	}
 	MouseMove seedX, seedY, 1
-	Loop, 40 {
-		topLeftX := Floor(seedX-(A_Index*5))
+	Loop, 150 {
+		topLeftX := Floor(seedX-(A_Index*3))
 		if (topLeftX < 0)
 			topLeftX := 0
-		topLeftY := Floor(seedY-(A_Index*5))
+		topLeftY := Floor(seedY-(A_Index*3))
 		if (topLeftY < 0)
 			topLeftY := 0
-		bottomRightX := Floor(seedX+(A_Index*5))
+		bottomRightX := Floor(seedX+(A_Index*3))
 		if (bottomRightX > winWidth) 
 			bottomRightX := winWidth
-		bottomRightY := Floor(seedY+(A_Index*5))
+		bottomRightY := Floor(seedY+(A_Index*3))
 		if (bottomRightY > winHeight) 
 			bottomRightY := winHeight
 		MouseMove topLeftX, topLeftY, 1
