@@ -1,12 +1,13 @@
 #SingleInstance force
-#InstallMouseHook
 #Include OCR.ahk
 #Include GDIp.ahk
 #Include GDIpHelper.ahk
 idleOption := 0
+buttonOption := 0
 donate := 0
 errorCheck := 0
 error := 0
+myTroopPercent := -1
 myGold := -1
 myElixir := -1
 myDarkElixir := -1
@@ -18,35 +19,48 @@ enemyElixir := -1
 CoordMode, Pixel, Relative
 CoordMode, Mouse, Relative
 SetTitleMatchMode, RegEx
-SetDefaultMouseSpeed, 10
+SetDefaultMouseSpeed, 5
 
 ; Create the popup menu by adding some items to it. 
 Menu, Toggles, Add, Keep from idling, IdleHandler
 Menu, Toggles, Add, Donate Goblins, DonateHandler
 Menu, Toggles, Add, Check for Errors, ErrorHandler
 Menu, MyMenu, Add, Toggle Options, :Toggles
+
+Menu, Buttons, Add, No Action, ButtonsHandler
+Menu, Buttons, Add, Troop Spray, ButtonsHandler
+Menu, Buttons, Add, Wall Upgrade, ButtonsHandler
+Menu, Buttons, Check, No Action
+Menu, MyMenu, Add, MouseButton1 Options, :Buttons
+
 Menu, Automations, Add, Gobblegobble, GoblinHandler
-Menu, Automations, Add, Gobblegobbledebug, GoblinHandlerDebug
-Menu, Automations, Add, Drop Trophies, DropTrophiesHandler
+Menu, Automations, Add, Drop Trophies, DropTrophies
 Menu, MyMenu, Add, Full Automation, :Automations
+
 Menu, SmallAutomations, Add, Train Goblins, TrainGoblins 
 Menu, SmallAutomations, Add, Collect Resources, CollectResources
 Menu, SmallAutomations, Add, Test Colors, TestColors
 Menu, MyMenu, Add, Small Routines, :SmallAutomations
+
 Menu, Configuration, Add, Set Collector Locations, ConfigResourceLocation
 Menu, Configuration, Add, Set Barracks Locations, ConfigBarracksLocation
+Menu, Configuration, Add, Set Camp Location, ConfigCampLocation
 Menu, MyMenu, Add, Configuration, :Configuration
+
 Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath the submenu.
 Menu, MyMenu, Add  ; Add a separator line.
 Menu, MyMenu, Add, Cum on step it up, Sanic
 Menu, MyMenu, Add, Show Debug Window, ShowDebug
 Menu, MyMenu, Add, Close Script, CoCExit
+Menu, MyMenu, Add, Test, ColorsEqualTest
+Menu, MyMenu, Add, TroopTest, MyTroopTotal
 
 
-
+BlockInput, MouseMoveOff
 ;SetTimer, CopyLogToDropbox, 1800000
 Gosub, IdleHandler
 Gosub, ReadConfig
+
 
 Gui, Add, Text,, Trophies:
 Gui, Add, Text,, Gems:
@@ -101,12 +115,6 @@ GuiControl,, EnemyGold, %enemyGold%
 GuiControl,, EnemyElixir, %enemyElixir%
 return
 
-CheckIdle:
-while (A_TimeIdlePhysical < 30000) {
-Sleep 100
-}
-return
-
 DrawText(text,x,y,res,size) {
 StartDrawGDIP()
 ClearDrawGDIP()
@@ -141,9 +149,36 @@ GoSub, MyBuilders
 MsgBox Gold: %myGold% Elixir: %myElixir% DarkElixir: %myDarkElixir% Trophies: %myTrophies% Gems: %myGems% Builders: %myBuilders%
 return
 
-Esc::Reload
-;F2::Libraries\Documents\Thunder.mp3
 
+ButtonsHandler:
+menu, %A_ThisMenu%, Check, %A_ThisMenuItem%
+if (A_ThisMenuItem = "No Action") {
+	menu, %A_ThisMenu%, Uncheck, Wall Upgrade
+	menu, %A_ThisMenu%, Uncheck, Troop Spray
+	buttonOption := 0
+} else if (A_ThisMenuItem = "Troop Spray") {
+	menu, %A_ThisMenu%, Uncheck, No Action
+	menu, %A_ThisMenu%, Uncheck, Wall Upgrade
+	buttonOption := 1
+} else if (A_ThisMenuItem = "Wall Upgrade") {
+	menu, %A_ThisMenu%, Uncheck, No Action
+	menu, %A_ThisMenu%, Uncheck, Troop Spray
+	buttonOption := 2
+}
+Hotkey, IfWinActive, BlueStacks
+
+if (buttonOption = 0) {
+Hotkey, XButton1,TroopSpray, On
+Hotkey, XButton1,, Off
+} else if (buttonOption = 1){
+Hotkey, XButton1, TroopSpray, On
+} else if (buttonOption = 2){
+Hotkey, XButton1, WallUpgrade, On
+}
+return
+
+
+Esc::Reload
 
 #z::Menu, MyMenu, Show  ; i.e. press the Win-Z hotkey to show the menu.
 
@@ -190,19 +225,17 @@ Error := 0
 return
 
 CheckInactive:
-if(!donate) {
 Gosub, GetWindow
-Gosub, ScrollUp
+BlockInput On
+MouseGetPos, xPos, yPos
+MouseClick,,CX1,CY1,,0
+MouseMove,xPos,yPos,0
+BlockInput Off
 return
-}
-Gosub, GetWindow
-PixelGetColor color, 28, 470
-if (color = 0xFFFFFF) {
-	Gosub, DonateGoblins
-}
 return
 
 GoblinHandler:
+BlockInput, MouseMove
 if(idleOption = 1) {
 	Gosub, IdleHandler
 }
@@ -210,92 +243,76 @@ if(errorCheck = 0) {
 	Gosub, ErrorHandler
 }
 SetTimer, WriteLog, 600000
+Gosub, DropTrophies
 Loop {
-Gosub, GetWindow
-Gosub, AttackButton
-Gosub, FindMatchButton
-Gosub, WaitForMatch
-Gosub, EnemyGold
-Gosub, EnemyElixir
-Gosub, UpdateGui
-pix:=GetFlowPixels()
-if((pix < 135000) and ((enemyGold + enemyElixir)>2000)) {
-useGoblins:= Ceil((enemyGold + enemyElixir) / 300) 
-if (useGoblins > 75) {
-	useGoblins := 75
+	Gosub, GetMyStats
+	Gosub, MyTroopTotal
+	if( mod(A_Index,5) = 1) {
+		Gosub, TrainGoblins
+		Gosub, CollectResources
+	}
+	if(myTroopPercent < 0.15) {
+		Loop {
+			Sleep 10000
+			GoSub, MyTroopTotal
+			if (myTroopPercent > 0.15)
+				break
+		}
+	}
+	Gosub, GetWindow
+	Gosub, AttackButton
+	Gosub, FindMatchButton
+	Gosub, WaitForMatch
+	Gosub, UpdateGui
+	pix:=GetFlowPixels()
+	if(pix < 135000) {
+		Gosub, EnemyGold
+		Gosub, EnemyElixir
+		if((enemyGold + enemyElixir)>2000) {
+			useGoblins:= Ceil((enemyGold + enemyElixir) / 400) 
+			if (useGoblins > 60) {
+				useGoblins := 60
+			}
+			DropGobsGold(useGoblins)
+			Gosub, ExitBattleIfDone
+		} else {
+			DropGobsGold(0)
+			Gosub, Surrender
+		}
+	} else {
+		DropGobsGold(0)
+		Gosub, Surrender
+	}
+	Gosub, WaitForHome
 }
-DropGobsGold(useGoblins)
-Gosub, ExitBattleIfDone
-} else {
-DropGobsGold(0)
-Gosub, Surrender
-}
-Gosub, WaitForHome
-Gosub, GetMyStats
+return
+
+DropTrophies:
+Gosub, MyTrophies
 if(myTrophies < 200) {
-	Gosub, TrainGoblins
-	Gosub, CollectResources
+	return
 }
-}
-return
-
-GoblinHandlerDebug:
-if(idleOption = 1) {
-	Gosub, IdleHandler
-}
-if(errorCheck = 0) {
-	Gosub, ErrorHandler
-}
-SetTimer, WriteLog, 600000
+Gosub, TrainGoblins
 Loop {
-Gosub, GetWindow
 Gosub, AttackButton
 Gosub, FindMatchButton
 Gosub, WaitForMatch
-Gosub, EnemyGold
-Gosub, EnemyElixir
-Gosub, UpdateGui
-pix:=GetFlowPixels()
-if((pix < 135000) and ((enemyGold + enemyElixir)>2000)) {
-useGoblins:= Ceil((enemyGold + enemyElixir) / 300) 
-if (useGoblins > 100) {
-	useGoblins := 100
-}
-DropGobsGold(useGoblins)
-Gosub, ExitBattleIfDone
-} else {
-Gosub, ScrollUp
-Gosub, DropTroop
-Gosub, Surrender
-}
-Gosub, WaitForHome
-Gosub, GetMyStats
-}
-return
-
-DropTrophiesHandler:
-Loop {
-Gosub, AttackButton
-Gosub, FindMatchButton
-Gosub, WaitForLoading
 Gosub, ZoomOut
 Gosub, ScrollUp
 Gosub, DropTroop
 Gosub, Surrender
-Gosub, WaitForLoading
+Gosub, WaitForHome
+Gosub, MyTrophies
+if(myTrophies < 200) {
+	return
+}
 }
 return
 
 
 GetWindow:
 WinActivate, BlueStacks
-WinWaitActive, BlueStacks,, 1
-if ErrorLevel {
-	MsgBox, Clash of Clans not running
-	return
-}
 return
-
 
 ExitButton:
 Gosub, GetWindow
@@ -349,19 +366,18 @@ return
 
 ZoomOut:
 Gosub, GetWindow
-Loop, 8  {
-SendInput, x
-Sleep, 250
-}
+MouseMove, 803, 505
+SendInput, {Control Down}-
+Sleep 200
+SendInput, -{Control Up}
 return
 
 ScrollUp:
 Gosub, GetWindow
-MouseMove, 803, 305
+MouseMove, 803, 305, 0
 Click down
-MouseMove, 803, 705
+MouseMove, 803, 705, 5
 Click up
-;Click WheelUp
 return
 
 ;wait for either base loading or match loading, deprecated
@@ -455,19 +471,6 @@ GoSub, ReturnFromBattleButton
 return
 
 TrainGoblins:
-
-;B1X := 400
-;B1Y := 611
-
-;B2X := 735
-;B2Y := 314
-
-;B3X := 869
-;B3Y := 314
-
-;B4X := 1205
-;B4Y := 719
-
 Gosub, GetWindow
 Gosub, ZoomOut
 Gosub, ScrollUp
@@ -476,9 +479,9 @@ Loop %totalBarracks% {
 MouseClick,, BX%A_Index%, BY%A_Index%
 Gosub, TrainTroopsButton
 MouseMove 805, 438
-Click down
-Sleep 2000
-Click up
+Loop 60 {
+Click 
+}
 Gosub, TroopTrainExitButton
 }
 return
@@ -550,6 +553,23 @@ IniWrite, %yPos%, config.ini, barracks, BY%A_Index%
 GoSub, ReadConfig
 return
 
+ConfigCampLocation:
+Gosub, GetWindow
+Gosub, ZoomOut
+Gosub, ScrollUp
+Gosub, GetWindow
+WinGetPos,winX,winY,winWidth,winHeight
+MsgBox, 0, Camp Location, After clicking okay on this window, click on an army camp and do not move the screen. Also`, make sure the camp will not be covered by gui buttons for the game.
+
+IniDelete, config.ini, camp
+KeyWait, LButton, D
+KeyWait, LButton, U
+MouseGetPos, xPos, yPos
+IniWrite, %xPos%, config.ini, camp, campX
+IniWrite, %yPos%, config.ini, camp, campY
+GoSub, ReadConfig
+return
+
 ReadConfig:
 IfNotExist, config.ini
 {
@@ -566,14 +586,18 @@ Loop %totalCollectors% {
 IniRead, CX%A_Index%, config.ini, collectors, CX%A_Index%
 IniRead, CY%A_Index%, config.ini, collectors, CY%A_Index%
 }
+IniRead, campX, config.ini, camp, campX
+IniRead, campY, config.ini, camp, campY
 return
 
 CollectResources:
 Gosub, GetWindow
 Gosub, ZoomOut
 Gosub, ScrollUp
+Loop 2 {
 Loop %totalCollectors% {
-MouseClick,, CX%A_Index%, CY%A_Index%
+MouseClick,, CX%A_Index%, CY%A_Index%,,0
+}
 }
 return
 
@@ -684,7 +708,7 @@ SetDefaultMouseSpeed, 0
 WinActivate, Paint
 Loop {
 WinActivate, Paint
-PixelSearch tempX, tempY, 15, 155, 1135, 809, 0x00A4D8, 1, Fast
+PixelSearch tempX, tempY, 15, 155, 1135, 809, 0x2662DB, 5, Fast
 ; 0xE058D5
 if ErrorLevel {
 MsgBox, Done
@@ -698,7 +722,7 @@ return
 GetFlowPixels() {
 GoSub, GetWindow
 GoSub, ZoomOut
-WinGetPos, xOffset, yOffset
+WinGetPos, xOffset, yOffset,,,A
 fileJpg := "base.jpg"
 filePng := "filter.png"
 fileTxt := "base.txt"
@@ -751,7 +775,7 @@ DropGobsGold(gobs) {
 	topLeftY:=38
 	width:=1333
 	height:=693
-	WinGetPos,,,winWidth,winHeight
+	WinGetPos,,,winWidth,winHeight, A
 	PixelSearch seedX, seedY, topLeftX, topLeftY, 1135, 809, 0x00A4D8, 1, Fast
 	if (ErrorLevel = 1) {
 	seedX := winWidth/2
@@ -771,10 +795,10 @@ DropGobsGold(gobs) {
 		bottomRightY := Floor(seedY+(A_Index*3))
 		if (bottomRightY > winHeight) 
 			bottomRightY := winHeight
-		MouseMove topLeftX, topLeftY, 1
-		MouseMove bottomRightX, topLeftY, 1
-		MouseMove bottomRightX, bottomRightY, 1
-		MouseMove topLeftX, bottomRightY, 1
+		;MouseMove topLeftX, topLeftY, 0
+		;MouseMove bottomRightX, topLeftY, 0
+		;MouseMove bottomRightX, bottomRightY, 0
+		;MouseMove topLeftX, bottomRightY, 0
 		PixelSearch, dropPointX, dropPointY, topLeftX, topLeftY, bottomRightX, bottomRightY, 0x2E7CCE, 1, Fast
 		if (ErrorLevel == 0) {
 			Loop %gobs% {
@@ -784,8 +808,89 @@ DropGobsGold(gobs) {
 			Click %dropPointX% %dropPointY%
 			return
 		} else if (ErrorLevel == 2) {
+			MsgBox, PixelSearch Error
 			return
 		}
 	}
 	return
 }
+
+
+;drops troop at fastest speed possible in random positions in a circle
+TroopSpray:
+BlockInput, MouseMove
+While GetKeyState("XButton1","P")
+{
+	Random, randRadius, 0, 200
+	Random, randRadians, 0.0, 6.2832
+	MouseGetPos, xPos, yPos
+	randX := Floor( randRadius * Cos(randRadians) ) + xPos
+	randY := Floor( randRadius * Sin(randRadians) ) + yPos
+	if (randX < 225)
+		randX := 225
+	if (randY < 30)
+		randY := 30
+	if (randX > 1595) 
+		randX := 1595
+	if (randY > 690) 
+		randY := 690
+	MouseClick,, randX, randY,, 0
+	MouseMove, xPos, yPos, 0
+}
+BlockInput, MouseMoveOff
+return
+
+WallUpgrade:
+BlockInput, MouseMove
+MouseGetPos, xPos, yPos
+Click
+Click 926, 780
+Click 820, 643
+MouseMove, xPos, yPos
+BlockInput, MouseMoveOff
+return
+
+MyTroopTotal:
+GoSub, GetWindow
+Gosub, ZoomOut
+Gosub, ScrollUp
+MouseClick,, campX, campY
+Sleep 500
+Click 741, 777
+Sleep 500
+minX := 801
+maxX := 1165
+Loop{
+	searchX := (minX + maxX) // 2
+	if (maxX - minX < 2) {
+		break
+	}
+	PixelGetColor barColor, searchX, 284
+	MouseMove, searchX, 284, 0
+	if ColorsEqual(barColor,0x00A837,4) {
+	minX := searchX
+	} else {
+	maxX := searchX
+	}
+}
+myTroopPercent := (searchX - 801) / 364
+Click 1156, 200
+MouseClick,, CX1, CY1
+return
+
+ColorsEqual(c1,c2,variance=0) {
+if (c1 = "" or c2 = "")
+	return 0
+d1 := Abs(c1//0x010000 - c2//0x010000)
+d2 := Abs((Mod(c1,0x010000)//0x000100) - (Mod(c2,0x010000)//0x000100))
+d3 := Abs(Mod(c1,0x000100) - Mod(c2,0x000100))
+if (d1 <= variance and d2 <= variance and d3 <= variance)
+	return 1
+return 0
+}
+
+ColorsEqualTest:
+testpar1 := "0x01A8D8"
+testpar2 := "0x00A4DA"
+MsgBox % ColorsEqual(testpar1,testpar2,3)
+return
