@@ -16,6 +16,11 @@ myGems := -1
 myBuilders := -1
 enemyGold := -1
 enemyElixir := -1
+dGold := -1
+dElixir := -1
+dDarkElixir := -1
+dTrophies := -1
+dAttacked := -1
 CoordMode, Pixel, Relative
 CoordMode, Mouse, Relative
 SetTitleMatchMode, RegEx
@@ -76,8 +81,10 @@ Gui, Add, Text,w100 vElixir, % myElixir
 Gui, Add, Text,w100 vDarkElixir, % myDarkElixir
 Gui, Add, Text,ys, EnemyGold:
 Gui, Add, Text,, EnemyElixir:
+Gui, Add, Text,, Error:
 Gui, Add, Text,w100 vEnemyGold ys, % enemyGold
 Gui, Add, Text,w100 vEnemyElixir, % enemyElixir
+Gui, Add, Text,w100 vError, % error
 
 return  ; End of script's auto-execute section.
 
@@ -98,6 +105,14 @@ time := ((A_YDay*24)+A_Hour)*60+A_Min
 FileAppend, %time%`,%myGold%`,%myElixir%`,%myDarkElixir%`,%myTrophies%`,%myGems%`,%myBuilders%`n, log.csv
 return
 
+WriteLog2:
+IfNotExist, log2.csv 
+{
+	FileAppend, myTrophies`,flowPixels`,netGold`,netElixir`,netDarkElixir`,netTrophies`,attacked`n, log2.csv
+}
+FileAppend, %myTrophies%`,%pix%`,%dGold%`,%dElixir%`,%dDarkElixir%`,%dTrophies%`,%dAttacked%`n, log2.csv
+return
+
 CopyLogToDropbox:
 if InStr(FileExist(HOMEDRIVE HOMEPATH "\Dropbox"), "D")
 	FileCopy, log.csv, %HOMEDRIVE%%HOMEPATH%\Dropbox\CoClog.csv , 1
@@ -113,6 +128,7 @@ GuiControl,, Elixir, %myElixir%
 GuiControl,, DarkElixir, %myDarkElixir%
 GuiControl,, EnemyGold, %enemyGold%
 GuiControl,, EnemyElixir, %enemyElixir%
+GuiControl,, Error, %error%
 return
 
 DrawText(text,x,y,res,size) {
@@ -210,18 +226,25 @@ return
 CheckError:
 Gosub, GetWindow
 PixelGetColor color, 803, 488
-if (color =  0x282828) {
+PixelGetColor color2, 853, 488
+PixelGetColor color3, 753, 488
+if (color =  0x282828 and color2 = 0x282828 and color3 = 0x282828) {
 Click 803, 488
-Error := 1
+error := 1
+GoSub, UpdateGui
 return
 }
 PixelGetColor color, 803, 499
-if (color =  0x282828) {
+PixelGetColor color2, 853, 499
+PixelGetColor color3, 753, 499
+if (color =  0x282828 and color2 = 0x282828 and color3 = 0x282828) {
 Click 803, 499
-Error := 1
+error := 1
+GoSub, UpdateGui
 return
 }
-Error := 0
+error := 0
+GoSub, UpdateGui
 return
 
 CheckInactive:
@@ -243,14 +266,15 @@ if(errorCheck = 0) {
 	Gosub, ErrorHandler
 }
 SetTimer, WriteLog, 600000
+Gosub, WaitForHome
+Gosub, GetMyStats
 Gosub, DropTrophies
 Loop {
-	Gosub, GetMyStats
 	Gosub, MyTroopTotal
 	if( mod(A_Index,5) = 1) {
 		Gosub, TrainGoblins
-		Gosub, CollectResources
 	}
+	Gosub, CollectResources
 	if(myTroopPercent < 0.15) {
 		Loop {
 			Sleep 10000
@@ -265,6 +289,7 @@ Loop {
 	Gosub, WaitForMatch
 	Gosub, UpdateGui
 	pix:=GetFlowPixels()
+	MouseMove, 100,100
 	if(pix < 135000) {
 		Gosub, EnemyGold
 		Gosub, EnemyElixir
@@ -274,16 +299,29 @@ Loop {
 				useGoblins := 60
 			}
 			DropGobsGold(useGoblins)
+			dAttacked := 1
 			Gosub, ExitBattleIfDone
 		} else {
 			DropGobsGold(0)
+			dAttacked := 0
 			Gosub, Surrender
 		}
 	} else {
 		DropGobsGold(0)
+		dAttacked := 0
 		Gosub, Surrender
 	}
 	Gosub, WaitForHome
+	dGold := myGold
+	dElixir := myElixir
+	dDarkElixir := myDarkElixir
+	dTrophies := myTrophies
+	Gosub, GetMyStats
+	dGold := myGold - dGold
+	dElixir := myElixir - dElixir
+	dDarkElixir := myDarkElixir - dDarkElixir
+	dTrophies := myTrophies - dTrophies
+	Gosub, WriteLog2
 }
 return
 
@@ -311,7 +349,12 @@ return
 
 
 GetWindow:
+Loop {
 WinActivate, BlueStacks
+IfWinActive, BlueStacks
+	break
+Sleep 1000
+}
 return
 
 ExitButton:
@@ -376,37 +419,25 @@ ScrollUp:
 Gosub, GetWindow
 MouseMove, 803, 305, 0
 Click down
-MouseMove, 803, 705, 5
+MouseMove, 803, 705
 Click up
 return
 
-;wait for either base loading or match loading, deprecated
-WaitForLoading:
-Sleep 1000
-Loop {
-	Sleep 1000
-	PixelGetColor, color, 831, 63
-	if (color = 0xF4F4EC) {
-		break
-	}
-	PixelGetColor, color, 141, 660
-	if (color = 0x5450EF) {
-		break
-	}
-}
-return
-
 WaitForMatch:
+GoSub, GetWindow
 Sleep 1000
 Loop {
+	GoSub, GetWindow
 	Sleep 1000
 	;If there was a shield, hit okay and continue
 	PixelGetColor, color, 914, 511
+	MouseMove, 914, 511
 	if (color = 0x75EAD0) {
 		Click 914, 511
 	}
 	;look for the red end battle button, finish blocking if found
 	PixelGetColor, color, 141, 660
+	MouseMove, 141, 660
 	if (color = 0x5450EF) {
 		break
 	}
@@ -414,8 +445,8 @@ Loop {
 	if (error = 1) {
 		;wait until we check for errors and there isn't one, sleep ten seconds, then restart the automation
 		Loop {
+			Sleep 10000
 			if (error = 0) {
-				Sleep 10000
 				Gosub, GoblinHandler
 			}
 		}
@@ -424,8 +455,10 @@ Loop {
 return
 
 WaitForHome:
+Gosub, GetWindow
 Sleep 1000
 Loop {
+	GoSub, GetWindow
 	Sleep 1000
 	;Look for the shield icon on the home screen (opaque so it's easy to get)
 	PixelGetColor, color, 831, 63
@@ -436,6 +469,7 @@ Loop {
 return
 
 ExitBattleIfDone:
+Gosub, GetWindow
 lastResources := enemyGold + enemyElixir
 i := 0
 Loop {
@@ -720,14 +754,18 @@ Click %tempX%, %tempY%
 return
 
 GetFlowPixels() {
+MouseMove ,500, 500
 GoSub, GetWindow
 GoSub, ZoomOut
 WinGetPos, xOffset, yOffset,,,A
+MouseMove ,400, 400
 fileJpg := "base.jpg"
 filePng := "filter.png"
 fileTxt := "base.txt"
 jpegQual := 100
 convertPath=convert.exe
+
+MouseMove ,300, 300
 
 ;take a screenshot of the specified area
 pToken:=Gdip_Startup()
@@ -738,6 +776,8 @@ Height:=655
 pBitmap:=Gdip_BitmapFromScreen(TopLeftX "|" TopLeftY "|" Width "|" Height)
 Gdip_SaveBitmapToFile(pBitmap, fileJpg, jpegQual)
 Gdip_Shutdown(pToken)
+
+MouseMove ,200, 200
 
 ; Wait for jpg file to exist
 while NOT FileExist(fileJpg)
