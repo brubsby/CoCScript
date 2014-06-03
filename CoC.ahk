@@ -7,6 +7,7 @@ buttonOption := 0
 donate := 0
 errorCheck := 0
 error := 0
+useNN := 1
 myTroopPercent := -1
 myGold := -1
 myElixir := -1
@@ -21,9 +22,37 @@ dElixir := -1
 dDarkElixir := -1
 dTrophies := -1
 dAttacked := -1
+
+barbarian		:= 1
+archer			:= 2
+goblin			:= 3
+giant			:= 4
+wallBreaker		:= 5
+balloon 		:= 6
+wizard 			:= 7
+healer 			:= 8
+dragon 			:= 9
+pekka 			:= 10
+minion 			:= 11
+hogRider 		:= 12
+valkyrie		:= 13
+golem			:= 14
+witch			:= 15
+barbarianKing 	:= 16
+archerQueen		:= 17
+lightning 		:= 18
+heal 			:= 19
+rage 			:= 20
+jump			:= 21
+freeze			:= 22
+santa			:= 23
+clan 			:= 24
+numSprites		:= 24
+
 CoordMode, Pixel, Relative
 CoordMode, Mouse, Relative
 SetTitleMatchMode, RegEx
+SetFormat, float, 0.16
 SetDefaultMouseSpeed, 5
 
 ; Create the popup menu by adding some items to it. 
@@ -39,7 +68,8 @@ Menu, Buttons, Check, No Action
 Menu, MyMenu, Add, MouseButton1 Options, :Buttons
 
 Menu, Automations, Add, Gobblegobble, GoblinHandler
-Menu, Automations, Add, Drop Trophies, DropTrophies
+Menu, Automations, Add, Drop Trophies Below 200, DropTrophies
+Menu, Automations, Add, Drop All Trophies, DropAllTrophies
 Menu, MyMenu, Add, Full Automation, :Automations
 
 Menu, SmallAutomations, Add, Train Goblins, TrainGoblins 
@@ -56,9 +86,10 @@ Menu, MyMenu, Add, Get Resources, MenuHandler  ; Add another menu item beneath t
 Menu, MyMenu, Add  ; Add a separator line.
 Menu, MyMenu, Add, Cum on step it up, Sanic
 Menu, MyMenu, Add, Show Debug Window, ShowDebug
+Menu, MyMenu, Add, Lock MouseY, LockMouseY
+Menu, MyMenu, Add, asdf, GatherTroopSelectors
 Menu, MyMenu, Add, Close Script, CoCExit
-Menu, MyMenu, Add, Test, ColorsEqualTest
-Menu, MyMenu, Add, TroopTest, MyTroopTotal
+
 
 
 BlockInput, MouseMoveOff
@@ -93,7 +124,9 @@ Gui, Show, ,
 return
 
 Sanic:
-SoundPlay, sanic.mp3
+SoundPlay, sanictheweedhog.mp3
+;SoundPlay, sanic.mp3
+SoundSetWaveVolume, 100
 return
 
 WriteLog:
@@ -195,6 +228,10 @@ return
 
 
 Esc::Reload
+F1::GoSub, GoblinHandler
+F2::GoSub, LockMouseY
+F3::GoSub, DataLoop
+F4::GoSub, GetDecision
 
 #z::Menu, MyMenu, Show  ; i.e. press the Win-Z hotkey to show the menu.
 
@@ -258,6 +295,7 @@ return
 return
 
 GoblinHandler:
+GoSub, GetWindow
 BlockInput, MouseMove
 if(idleOption = 1) {
 	Gosub, IdleHandler
@@ -266,20 +304,19 @@ if(errorCheck = 0) {
 	Gosub, ErrorHandler
 }
 SetTimer, WriteLog, 600000
+Click 444, 77
 Gosub, WaitForHome
 Gosub, GetMyStats
 Gosub, DropTrophies
 Loop {
 	Gosub, MyTroopTotal
-	if( mod(A_Index,5) = 1) {
-		Gosub, TrainGoblins
-	}
+	Gosub, TrainGoblins
 	Gosub, CollectResources
-	if(myTroopPercent < 0.15) {
+	if(myTroopPercent < 0.3) {
 		Loop {
 			Sleep 10000
 			GoSub, MyTroopTotal
-			if (myTroopPercent > 0.15)
+			if (myTroopPercent > 0.3)
 				break
 		}
 	}
@@ -288,28 +325,68 @@ Loop {
 	Gosub, FindMatchButton
 	Gosub, WaitForMatch
 	Gosub, UpdateGui
-	pix:=GetFlowPixels()
-	MouseMove, 100,100
-	if(pix < 135000) {
-		Gosub, EnemyGold
-		Gosub, EnemyElixir
-		if((enemyGold + enemyElixir)>2000) {
-			useGoblins:= Ceil((enemyGold + enemyElixir) / 400) 
-			if (useGoblins > 60) {
-				useGoblins := 60
+	GoSub, GatherTroopSelectors
+	if(useNN) {
+		if(myTrophies < 150) {
+			Loop {
+				attack := NNDecision()
+				if(attack > 0.85) {
+					FileCopy, base.jpg, BasePictures\Attacked\%A_Now%.jpg
+					useGoblins:= Ceil((enemyGold + enemyElixir) / 400) 
+					if (useGoblins > 60) {
+						useGoblins := 60
+					}
+					DropGobsGold(useGoblins)
+					dAttacked := 1
+					Gosub, ExitBattleIfDone
+					break
+				} else {
+					FileCopy, base.jpg, BasePictures\Surrendered\%A_Now%.jpg
+					Gosub, NextMatchButton
+					Gosub, WaitForMatch
+				}
 			}
-			DropGobsGold(useGoblins)
-			dAttacked := 1
-			Gosub, ExitBattleIfDone
+		} else {
+			attack := NNDecision()
+			if(attack > 0.85) {
+				FileCopy, base.jpg, BasePictures\Attacked\%A_Now%.jpg
+				useGoblins:= Ceil((enemyGold + enemyElixir/2) / 400) 
+				if (useGoblins > 60) {
+					useGoblins := 60
+				}
+				DropGobsGold(useGoblins)
+				dAttacked := 1
+				Gosub, ExitBattleIfDone
+				break
+			} else {
+				FileCopy, base.jpg, BasePictures\Surrendered\%A_Now%.jpg
+				dAttacked := 0
+				Gosub, Surrender
+			}
+		}
+	} else {
+		pix:=GetFlowPixels()
+		if(pix < 135000) {
+			Gosub, EnemyGold
+			Gosub, EnemyElixir
+			if((enemyGold + enemyElixir)>2000) {
+				useGoblins:= Ceil((enemyGold + enemyElixir) / 400) 
+				if (useGoblins > 60) {
+					useGoblins := 60
+				}
+				DropGobsGold(useGoblins)
+				dAttacked := 1
+				Gosub, ExitBattleIfDone
+			} else {
+				DropGobsGold(0)
+				dAttacked := 0
+				Gosub, Surrender
+			}
 		} else {
 			DropGobsGold(0)
 			dAttacked := 0
 			Gosub, Surrender
 		}
-	} else {
-		DropGobsGold(0)
-		dAttacked := 0
-		Gosub, Surrender
 	}
 	Gosub, WaitForHome
 	dGold := myGold
@@ -321,7 +398,6 @@ Loop {
 	dElixir := myElixir - dElixir
 	dDarkElixir := myDarkElixir - dDarkElixir
 	dTrophies := myTrophies - dTrophies
-	Gosub, WriteLog2
 }
 return
 
@@ -335,6 +411,10 @@ Loop {
 Gosub, AttackButton
 Gosub, FindMatchButton
 Gosub, WaitForMatch
+Gosub, GatherTroopSelectors
+SelectTroop(goblin)
+SelectTroop(barbarianKing)
+SelectTroop(archerQueen)
 Gosub, ZoomOut
 Gosub, ScrollUp
 Gosub, DropTroop
@@ -344,6 +424,24 @@ Gosub, MyTrophies
 if(myTrophies < 200) {
 	return
 }
+}
+return
+
+DropAllTrophies:
+Gosub, TrainGoblins
+Loop {
+Gosub, AttackButton
+Gosub, FindMatchButton
+Gosub, WaitForMatch
+Gosub, GatherTroopSelectors
+SelectTroop(goblin)
+SelectTroop(barbarianKing)
+SelectTroop(archerQueen)
+Gosub, ZoomOut
+Gosub, ScrollUp
+Gosub, DropTroop
+Gosub, Surrender
+Gosub, WaitForHome
 }
 return
 
@@ -370,6 +468,11 @@ return
 FindMatchButton:
 Gosub, GetWindow
 Click 281, 671
+return
+
+NextMatchButton:
+Gosub, GetWindow
+Click 1464, 648
 return
 
 EndMatchButton:
@@ -410,9 +513,13 @@ return
 ZoomOut:
 Gosub, GetWindow
 MouseMove, 803, 505
-SendInput, {Control Down}-
-Sleep 200
-SendInput, -{Control Up}
+SendInput, {Control Down}
+Sleep 300
+SendInput, -
+Sleep 300
+SendInput, -
+Sleep 300
+SendInput, {Control Up}
 return
 
 ScrollUp:
@@ -510,29 +617,37 @@ Gosub, ZoomOut
 Gosub, ScrollUp
 
 Loop %totalBarracks% {
-MouseClick,, BX%A_Index%, BY%A_Index%
-Gosub, TrainTroopsButton
-MouseMove 805, 438
-Loop 60 {
-Click 
-}
-Gosub, TroopTrainExitButton
+Train(A_Index,goblin,60)
 }
 return
+
+Train(barracks,troop,amount) {
+Gosub, GetWindow
+MouseClick,, BX%barracks%, BY%barracks%
+Gosub, TrainTroopsButton
+TrainTroop(troop,amount)
+Gosub, TroopTrainExitButton
+return
+}
+
+;while in the barracks dialogue, click a troop for an amount
+TrainTroop(troop,amount) {
+if (troop < 1 or troop > 10 )
+	return
+clickX := Mod(troop-1,5)*141+525
+clickY := ((troop-1)//5)*146+429
+Loop %amount% {
+	MouseClick,, clickX, clickY
+}
+return
+}
 
 DropTroop:
+SelectTroop(goblin)
+SelectTroop(barbarianKing)
+SelectTroop(archerQueen)
 MouseMove 799, 53
 Click
-return
-
-DropTroops:
-MouseMove 799, 53
-Click down
-Sleep 1000
-MouseMove 72, 582, 100
-Click up
-Click 419, 787
-Click 799, 53
 return
 
 ConfigResourceLocation:
@@ -754,18 +869,14 @@ Click %tempX%, %tempY%
 return
 
 GetFlowPixels() {
-MouseMove ,500, 500
 GoSub, GetWindow
 GoSub, ZoomOut
 WinGetPos, xOffset, yOffset,,,A
-MouseMove ,400, 400
 fileJpg := "base.jpg"
 filePng := "filter.png"
 fileTxt := "base.txt"
 jpegQual := 100
 convertPath=convert.exe
-
-MouseMove ,300, 300
 
 ;take a screenshot of the specified area
 pToken:=Gdip_Startup()
@@ -776,8 +887,6 @@ Height:=655
 pBitmap:=Gdip_BitmapFromScreen(TopLeftX "|" TopLeftY "|" Width "|" Height)
 Gdip_SaveBitmapToFile(pBitmap, fileJpg, jpegQual)
 Gdip_Shutdown(pToken)
-
-MouseMove ,200, 200
 
 ; Wait for jpg file to exist
 while NOT FileExist(fileJpg)
@@ -810,7 +919,16 @@ return result
 }
 
 DropGobsGold(gobs) {
+	global
 	GoSub, GetWindow
+	if (gobs = 0) {
+		SelectTroop(goblin)
+		SelectTroop(barbarianKing)
+		SelectTroop(archerQueen)
+		GoSub, ScrollUp
+		Click 799, 53
+		return	
+	}
 	topLeftX:=211
 	topLeftY:=38
 	width:=1333
@@ -841,10 +959,13 @@ DropGobsGold(gobs) {
 		;MouseMove topLeftX, bottomRightY, 0
 		PixelSearch, dropPointX, dropPointY, topLeftX, topLeftY, bottomRightX, bottomRightY, 0x2E7CCE, 1, Fast
 		if (ErrorLevel == 0) {
+			SelectTroop(goblin)
 			Loop %gobs% {
 				Click %dropPointX% %dropPointY%
 			}
-			Click 419, 787
+			SelectTroop(barbarianKing)
+			Click %dropPointX% %dropPointY%
+			SelectTroop(archerQueen)
 			Click %dropPointX% %dropPointY%
 			return
 		} else if (ErrorLevel == 2) {
@@ -929,8 +1050,204 @@ if (d1 <= variance and d2 <= variance and d3 <= variance)
 return 0
 }
 
-ColorsEqualTest:
-testpar1 := "0x01A8D8"
-testpar2 := "0x00A4DA"
-MsgBox % ColorsEqual(testpar1,testpar2,3)
+LockMouseY:
+MouseGetPos, xPos, yPos
+lockY := 776
+Loop {
+	MouseGetPos, xPos, yPos
+	if (yPos != lockY)
+		MouseMove,xPos,lockY,0
+}
+return
+
+GatherTroopSelectors:
+GoSub, GetWindow
+WinGetPos,,,winWidth,winHeight, A
+searchHeight := 776
+%barbarian%Color		:= 0x186E92
+%archer%Color			:= 0x6F3EE0
+%goblin%Color			:= 0x51C779
+%giant%Color			:= 0x64ACFC
+%wallBreaker%Color		:= 0x5A454C
+%balloon%Color 			:= 0x10144D
+%wizard%Color 			:= 0xD1F4FC
+%healer%Color 			:= 0xE4FBFC
+%dragon%Color 			:= 0x835361
+%pekka%Color 			:= 0xFF0000
+%minion%Color 			:= 0xE8BC59
+%hogRider%Color 		:= 0x343E66
+%valkyrie%Color 		:= 0xFF0000
+%golem%Color 			:= 0xFF0000
+%witch%Color 			:= 0xFF0000
+%barbarianKing%Color 	:= 0x1E3043
+%archerQueen%Color 		:= 0xFF0000
+%lightning%Color 		:= 0xFDF8D0
+%heal%Color 			:= 0x91C8CA
+%rage%Color 			:= 0x524360
+%jump%Color 			:= 0xFF0000
+%freeze%Color 			:= 0xFF0000
+%santa%Color 			:= 0xFF0000
+%clan%Color 			:= 0x27576C
+Loop %numSprites% {
+;if (%A_Index%Color = 0)
+;	continue
+PixelSearch, %A_Index%SelectX,, 0, searchHeight, winWidth, searchHeight, %A_Index%Color, 3, fast
+if(%A_Index%SelectX != "")
+	MouseMove, %A_Index%SelectX,searchHeight,3
+}
+return
+
+SelectTroop(troop) {
+	global
+	if(%troop%SelectX = "")
+		return
+	MouseClick,, %troop%SelectX,776
+	return
+}
+
+GatherData:
+GoSub, GetWindow
+GoSub, ZoomOut
+IniRead, nextFile, config.ini, neuroInfo, infoFileName, 00000
+WinGetPos, xOffset, yOffset,,,A
+fileJpg := "base.jpg"
+filePng := "NeuroInputs\pictures\" . nextFile . ".png"
+fileTxt := "NeuroInputs\inputs\" . nextFile . ".txt"
+jpegQual := 100
+convertPath=convert.exe
+
+;take a screenshot of the specified area
+pToken:=Gdip_Startup()
+TopLeftX:=211 + xOffset
+TopLeftY:=38 + yOffset
+Width:=1122
+Height:=655
+pBitmap:=Gdip_BitmapFromScreen(TopLeftX "|" TopLeftY "|" Width "|" Height)
+Gdip_SaveBitmapToFile(pBitmap, fileJpg, jpegQual)
+Gdip_Shutdown(pToken)
+
+; Wait for jpg file to exist
+while NOT FileExist(fileJpg)
+  Sleep, 10
+
+;ensure the exes are there
+if NOT FileExist(convertPath)
+  MsgBox, No convert.exe found
+  
+convertCmd=convert.exe %fileJpg% -remap colormap.png %filePng%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+; Wait for png file to exist
+while NOT FileExist(filePng)
+	Sleep, 10
+
+convertCmd=convert.exe %filePng% -format `%c histogram:info:- > %fileTxt%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+; Wait for txt file to exist
+while NOT FileExist(fileTxt)
+	Sleep, 10
+pix:=GetFlowPixels()
+Gosub, EnemyGold
+Gosub, EnemyElixir
+FileAppend, %enemyGold%: #enemyGold`n, %fileTxt%
+FileAppend, %enemyElixir%: #enemyElixir`n, %fileTxt%
+FileAppend, %pix%: #enemyFlow`n, %fileTxt%
+
+nextFile := nextFile + 1
+nextFile := SubStr("0000" . nextFile, -4)
+IniWrite, %nextFile%, config.ini, neuroInfo, infoFileName
+return
+
+DataLoop:
+Loop {
+	GoSub, WaitForMatch
+	GoSub, GatherData
+	GoSub, NextMatchButton
+}
+return
+
+NNDecision() {
+global
+GoSub, GetWindow
+GoSub, ZoomOut
+WinGetPos, xOffset, yOffset,,,A
+fileJpg := "base.jpg"
+filePng := "nnInputQuantized.png"
+fileTxt := "baseHistQuantized.txt"
+fileIns := "anji_2_01\properties\temp_stimuli.txt"
+fileOut := "nnOutput.txt"
+jpegQual := 100
+convertPath=convert.exe
+
+;take a screenshot of the specified area
+pToken:=Gdip_Startup()
+TopLeftX:=211 + xOffset
+TopLeftY:=38 + yOffset
+Width:=1122
+Height:=655
+pBitmap:=Gdip_BitmapFromScreen(TopLeftX "|" TopLeftY "|" Width "|" Height)
+Gdip_SaveBitmapToFile(pBitmap, fileJpg, jpegQual)
+Gdip_Shutdown(pToken)
+
+; Wait for jpg file to exist
+while NOT FileExist(fileJpg)
+  Sleep, 10
+
+;ensure the exes are there
+if NOT FileExist(convertPath)
+  MsgBox, No convert.exe found
+  
+convertCmd=convert.exe %fileJpg% -remap colormap.png %filePng%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+; Wait for png file to exist
+while NOT FileExist(filePng)
+	Sleep, 10
+
+convertCmd=convert.exe %filePng% -format `%c histogram:info:- > %fileTxt%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+; Wait for txt file to exist
+while NOT FileExist(fileTxt)
+	Sleep, 10
+pix:=GetFlowPixels()
+Gosub, EnemyGold
+Gosub, EnemyElixir
+
+FileDelete, %fileIns%
+FileAppend,, %fileIns%
+Loop, read, %fileTxt%, %fileIns%
+{
+	result:=SubStr(A_LoopReadLine,1,10)
+	result:=RegExReplace(result," ")
+	result:=result/7349.10
+	FileAppend, %result%
+	FileAppend, `;
+}
+result := enemyGold/8000.1000
+FileAppend,%result%,%fileIns%
+FileAppend, `;,%fileIns%
+result := enemyElixir/8000.1000
+FileAppend,%result%,%fileIns%
+FileAppend, `;,%fileIns%
+result:=pix/7349.10
+FileAppend,%result%,%fileIns%
+FileAppend, `n,%fileIns%
+
+convertCmd= activate.bat CoC.properties 128833 > %fileOut%
+Runwait, %comspec% /c %convertCmd%,, Hide
+
+FileRead, result, %fileOut%
+RegExMatch(result, "(?<=OUT \()([^ ]*)(?=\))",subpat)
+IfInString, subpat, "E-"
+	result := 0.0
+else
+	result := subpat
+
+return result
+}
+
+GetDecision:
+MsgBox % NNDecision()
 return

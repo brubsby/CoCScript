@@ -10,3 +10,9 @@ convert 3.png -fill white -floodfill +200+200 black 4.png
 convert 4.png -format %c histogram:info:- > edgetest.txt
 
 attack anything under 130000 (but check for red lines in the middle)
+
+E:\Downloads\nevt\network>java -classpath E:\xalan-j_2_7_2\xalan.jar org.apache.xalan.xslt.Process -in network.xml -xsl format.xsl -out output.xml
+
+E:\Downloads\nevt\network>java -classpath E:\xalan-j_2_7_2\xalan.jar org.apache.xalan.xslt.Process -in output.xml -xsl draw.xsl -out network.svg
+
+convert -append in-*.jpg out.jpg

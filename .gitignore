@@ -1,6 +1,9 @@
-log.csv
-base.txt
-base.jpg
-filter.png
-config.ini
-log2.csv
+*.csv
+*.txt
+*.jpg
+*.png
+!colormap.png
+*.ini
+BasePictures\*
+NeuroInputs\inputs\*
+NeuroInputs\pictures\*
