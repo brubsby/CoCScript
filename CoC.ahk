@@ -347,28 +347,21 @@ Loop {
 				}
 			}
 		} else {
-			Loop {
-				attack := NNDecision()
-				if(attack > 0.85) {
-					FileCopy, base.jpg, BasePictures\Attacked\%A_Now%.jpg
-					useGoblins:= Ceil((enemyGold + enemyElixir/2) / 400) 
-					if (useGoblins > 60) {
-						useGoblins := 60
-					}
-					DropGobsGold(useGoblins)
-					dAttacked := 1
-					Gosub, ExitBattleIfDone
-					break
-				} else {
-					FileCopy, base.jpg, BasePictures\Surrendered\%A_Now%.jpg
-					DropGobsGold(0)
-					dAttacked := 0
-					Gosub, Surrender
-					Gosub, WaitForHome
-					Gosub, AttackButton
-					Gosub, FindMatchButton
-					Gosub, WaitForMatch
+			attack := NNDecision()
+			if(attack > 0.85) {
+				FileCopy, base.jpg, BasePictures\Attacked\%A_Now%.jpg
+				useGoblins:= Ceil((enemyGold + enemyElixir/2) / 400) 
+				if (useGoblins > 60) {
+					useGoblins := 60
 				}
+				DropGobsGold(useGoblins)
+				dAttacked := 1
+				Gosub, ExitBattleIfDone
+				break
+			} else {
+				FileCopy, base.jpg, BasePictures\Surrendered\%A_Now%.jpg
+				dAttacked := 0
+				Gosub, Surrender
 			}
 		}
 	} else {
