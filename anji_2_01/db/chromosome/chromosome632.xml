@@ -1,0 +1,16 @@
+<chromosome id="632" primary-parent-id="339" secondary-parent-id="22"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="8" src-id="0" dest-id="7" weight="0.6215468645095825"/>
+<connection id="9" src-id="1" dest-id="7" weight="1.1742073985189352"/>
+<connection id="10" src-id="2" dest-id="7" weight="-1.2772778681870167"/>
+<connection id="11" src-id="3" dest-id="7" weight="-0.8713928336547165"/>
+<connection id="12" src-id="4" dest-id="7" weight="2.216140502342177"/>
+<connection id="13" src-id="5" dest-id="7" weight="2.127701437588808"/>
+<connection id="14" src-id="6" dest-id="7" weight="-0.13079789819998397"/>
+</chromosome>

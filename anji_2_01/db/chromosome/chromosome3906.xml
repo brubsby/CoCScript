@@ -1,0 +1,16 @@
+<chromosome id="3906" primary-parent-id="3523"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="8" src-id="0" dest-id="7" weight="5.975220183579545"/>
+<connection id="9" src-id="1" dest-id="7" weight="-2.298736258058913"/>
+<connection id="10" src-id="2" dest-id="7" weight="-6.700833985127746"/>
+<connection id="11" src-id="3" dest-id="7" weight="-10.20574384817741"/>
+<connection id="12" src-id="4" dest-id="7" weight="10.606664711335762"/>
+<connection id="13" src-id="5" dest-id="7" weight="2.6899221870994623"/>
+<connection id="256" src-id="7" dest-id="7" weight="-0.7796945427406292"/>
+</chromosome>

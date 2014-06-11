@@ -1,0 +1,16 @@
+<chromosome id="163"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="8" src-id="0" dest-id="7" weight="-0.7019549608230591"/>
+<connection id="9" src-id="1" dest-id="7" weight="-0.4946424961090088"/>
+<connection id="10" src-id="2" dest-id="7" weight="0.10505068302154541"/>
+<connection id="11" src-id="3" dest-id="7" weight="-0.27710556983947754"/>
+<connection id="12" src-id="4" dest-id="7" weight="0.30780529975891113"/>
+<connection id="13" src-id="5" dest-id="7" weight="0.7485989332199097"/>
+<connection id="14" src-id="6" dest-id="7" weight="-0.05424070358276367"/>
+</chromosome>

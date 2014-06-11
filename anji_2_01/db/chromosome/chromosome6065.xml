@@ -1,0 +1,19 @@
+<chromosome id="6065" primary-parent-id="896"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="8" src-id="0" dest-id="7" weight="3.6543231180087115"/>
+<connection id="9" src-id="1" dest-id="7" weight="1.0290295320890879"/>
+<connection id="10" src-id="2" dest-id="7" weight="-1.274196199118972"/>
+<connection id="11" src-id="3" dest-id="7" weight="-2.7432624317274112"/>
+<connection id="12" src-id="4" dest-id="7" weight="0.3461681362455691"/>
+<connection id="13" src-id="5" dest-id="7" weight="1.1861596905882923"/>
+<connection id="256" src-id="7" dest-id="7" weight="-1.447935620419519"/>
+<neuron id="279" type="hid" activation="sigmoid"/>
+<connection id="280" src-id="6" dest-id="279" weight="-0.40956789885917405"/>
+<connection id="281" src-id="279" dest-id="7" weight="-2.3398955653997215"/>
+</chromosome>

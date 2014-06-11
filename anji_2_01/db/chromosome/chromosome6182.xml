@@ -1,0 +1,18 @@
+<chromosome id="6182" primary-parent-id="2373"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="8" src-id="0" dest-id="7" weight="-4.293095312033488"/>
+<connection id="9" src-id="1" dest-id="7" weight="3.2614397002264885"/>
+<connection id="10" src-id="2" dest-id="7" weight="-1.3562935971743924"/>
+<connection id="12" src-id="4" dest-id="7" weight="4.443104190076735"/>
+<connection id="13" src-id="5" dest-id="7" weight="2.808618846505726"/>
+<connection id="14" src-id="6" dest-id="7" weight="0.7405829861035731"/>
+<neuron id="288" type="hid" activation="sigmoid"/>
+<connection id="289" src-id="3" dest-id="288" weight="2.8538984090590187"/>
+<connection id="290" src-id="288" dest-id="7" weight="-2.1034947216622437"/>
+</chromosome>

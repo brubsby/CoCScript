@@ -1,0 +1,15 @@
+<chromosome id="6109" primary-parent-id="4300"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="8" src-id="0" dest-id="7" weight="6.917993603795691"/>
+<connection id="9" src-id="1" dest-id="7" weight="-0.44672485515702176"/>
+<connection id="10" src-id="2" dest-id="7" weight="-6.700833985127746"/>
+<connection id="11" src-id="3" dest-id="7" weight="-11.39940160843212"/>
+<connection id="13" src-id="5" dest-id="7" weight="-0.6315320160630615"/>
+<connection id="256" src-id="7" dest-id="7" weight="-2.0841306917044404"/>
+</chromosome>

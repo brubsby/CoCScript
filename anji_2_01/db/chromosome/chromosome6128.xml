@@ -1,0 +1,34 @@
+<chromosome id="6128" primary-parent-id="5848"><neuron id="0" type="in" activation="linear"/>
+<neuron id="1" type="in" activation="linear"/>
+<neuron id="2" type="in" activation="linear"/>
+<neuron id="3" type="in" activation="linear"/>
+<neuron id="4" type="in" activation="linear"/>
+<neuron id="5" type="in" activation="linear"/>
+<neuron id="6" type="in" activation="linear"/>
+<neuron id="7" type="out" activation="sigmoid"/>
+<connection id="9" src-id="1" dest-id="7" weight="0.5753086961911063"/>
+<connection id="10" src-id="2" dest-id="7" weight="-1.7290278893838311"/>
+<connection id="11" src-id="3" dest-id="7" weight="-6.946458034011268"/>
+<connection id="12" src-id="4" dest-id="7" weight="0.45538535570920335"/>
+<connection id="13" src-id="5" dest-id="7" weight="2.9145158665946536"/>
+<connection id="256" src-id="7" dest-id="7" weight="0.20094618743904424"/>
+<neuron id="279" type="hid" activation="sigmoid"/>
+<connection id="280" src-id="6" dest-id="279" weight="7.605083417994858"/>
+<neuron id="285" type="hid" activation="sigmoid"/>
+<connection id="286" src-id="0" dest-id="285" weight="-1.5469602797357367"/>
+<connection id="287" src-id="285" dest-id="7" weight="6.681923967563368"/>
+<connection id="472" src-id="3" dest-id="285" weight="-5.580462366235906"/>
+<neuron id="685" type="hid" activation="sigmoid"/>
+<connection id="686" src-id="7" dest-id="685" weight="3.363780025974665"/>
+<connection id="687" src-id="685" dest-id="285" weight="-5.609624173623342"/>
+<neuron id="691" type="hid" activation="sigmoid"/>
+<connection id="692" src-id="279" dest-id="691" weight="3.888568074108475"/>
+<connection id="693" src-id="691" dest-id="7" weight="0.9211324878666401"/>
+<connection id="1051" src-id="685" dest-id="685" weight="5.042310550291514"/>
+<connection id="2396" src-id="1" dest-id="691" weight="0.30038244405114733"/>
+<connection id="2414" src-id="685" dest-id="279" weight="-1.3489636436682653"/>
+<connection id="2946" src-id="691" dest-id="279" weight="-0.9060736367277782"/>
+<neuron id="3742" type="hid" activation="sigmoid"/>
+<connection id="3743" src-id="285" dest-id="3742" weight="1.0"/>
+<connection id="3744" src-id="3742" dest-id="685" weight="0.6958003526654152"/>
+</chromosome>
